@@ -13,6 +13,7 @@ const ROLE_LABEL = {
 const NAV: { href: string; label: string; permission: Permission }[] = [
   { href: "/admin", label: "Início", permission: "agenda:ver" },
   { href: "/admin/agenda", label: "Agenda", permission: "agenda:ver" },
+  { href: "/admin/configuracoes", label: "Configurações", permission: "configuracoes:gerir" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
