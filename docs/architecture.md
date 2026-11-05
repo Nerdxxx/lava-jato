@@ -32,3 +32,6 @@ Regra: componentes e rotas **não** contêm regra de negócio; chamam serviços 
 
 ## Permissões
 Matriz central em `src/lib/permissions.ts` (perfil → permissões granulares `recurso:ação`). Cliente só acessa recursos próprios (verificação por `customerId` da sessão).
+
+## Notas de desenvolvimento
+- Em dev sem Docker, `DATABASE_URL=pglite://<caminho>` deve apontar para **fora** da pasta do projeto (ex.: `%LOCALAPPDATA%/ljc-system/pglite/dev`). Dentro do projeto, o Next.js detecta as gravações do PGlite e recarrega a página em loop.

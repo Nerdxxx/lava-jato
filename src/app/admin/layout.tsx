@@ -12,6 +12,7 @@ const ROLE_LABEL = {
 // Apenas módulos já implementados aparecem no menu.
 const NAV: { href: string; label: string; permission: Permission }[] = [
   { href: "/admin", label: "Início", permission: "agenda:ver" },
+  { href: "/admin/agenda", label: "Agenda", permission: "agenda:ver" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

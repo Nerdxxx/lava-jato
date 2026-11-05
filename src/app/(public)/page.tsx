@@ -12,9 +12,14 @@ export default function HomePage() {
         <p className="text-muted">
           Lavagem externa, lavagem completa com limpeza interna básica e lavagem de motos, em Barra dos Coqueiros.
         </p>
-        <Link href="/precos" className={buttonVariants()}>
-          Ver tabela de preços
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/agendar" className={buttonVariants()}>
+            Agendar lavagem
+          </Link>
+          <Link href="/precos" className={buttonVariants({ variant: "outline" })}>
+            Ver tabela de preços
+          </Link>
+        </div>
       </div>
       <Image
         src="/branding/logo-ljc.png"

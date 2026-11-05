@@ -4,6 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 
 const NAV = [
   { href: "/precos", label: "Preços" },
+  { href: "/agendamento", label: "Meu agendamento" },
   { href: "/entrar", label: "Entrar" },
 ];
 
@@ -19,13 +20,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 {i.label}
               </Link>
             ))}
-            <span
-              className={buttonVariants({ variant: "outline" }) + " pointer-events-none hidden opacity-60 sm:inline-flex"}
-              aria-disabled="true"
-              title="Disponível na Fase 2"
-            >
-              Agendar (em breve)
-            </span>
+            <Link href="/agendar" className={buttonVariants({ className: "min-h-9 px-4" })}>
+              Agendar
+            </Link>
           </nav>
         </div>
       </header>
