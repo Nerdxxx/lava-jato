@@ -18,13 +18,13 @@
 - **Fila Kanban** (`/admin/fila`): Agendados hoje, Recebidos, Aguardando, Em lavagem, Finalização, Prontos, Entregues hoje. Placa mascarada; nome do cliente só para quem tem `clientes:ver`. Atualiza sozinha a cada 10 s (polling).
 - **Clientes** (`/admin/clientes`): busca por nome/telefone/placa/modelo, perfil 360° (dados, veículos, agendamentos, OS), edição, consentimento de marketing separado, cadastro de veículos.
 - Visibilidade: FUNCIONARIO só vê OS atribuídas a ele ou sem responsável.
-- 35 testes novos (total 73).
+- **Funcionários** (`/admin/funcionarios`, só ADMINISTRADOR): cadastro, perfil, ativar/desativar, redefinir senha. Não deixa ficar sem administrador ativo nem o admin se desativar/rebaixar; mudar perfil, desativar ou redefinir senha encerra as sessões do usuário. **Minha conta** (`/admin/conta`): troca da própria senha (exige a atual; encerra as outras sessões).
+- 44 testes novos (total 82).
 
 ## Pendências da Fase 3
 - Arrastar e soltar na fila (opcional no prompt; hoje são botões).
 - Sincronização por polling; evoluir para SSE/WebSocket se necessário.
 - Câmera: o campo usa `capture` do celular; não testado em aparelho real.
-- Cadastro de funcionários (usuários da equipe) ainda não tem tela: criar via seed/banco. Necessário antes de usar atribuição com mais de uma pessoa.
 - Tela de edição de checklist por serviço (modelos só via seed).
 - Estoque: baixa automática por OS é da Fase 5.
 - Fotos autorizadas no perfil do cliente (Fase 6).

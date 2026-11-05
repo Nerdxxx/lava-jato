@@ -16,7 +16,9 @@ const NAV: { href: string; label: string; permission: Permission }[] = [
   { href: "/admin/fila", label: "Fila", permission: "fila:ver" },
   { href: "/admin/os", label: "Ordens de serviço", permission: "os:ver" },
   { href: "/admin/clientes", label: "Clientes", permission: "clientes:ver" },
+  { href: "/admin/funcionarios", label: "Funcionários", permission: "funcionarios:gerir" },
   { href: "/admin/configuracoes", label: "Configurações", permission: "configuracoes:gerir" },
+  { href: "/admin/conta", label: "Minha conta", permission: "agenda:ver" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
