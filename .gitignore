@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+coverage/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+.env
+.env.*
+!.env.example
+.pglite/
+storage/
+playwright-report/
+test-results/
+npm-debug.log*
+.DS_Store

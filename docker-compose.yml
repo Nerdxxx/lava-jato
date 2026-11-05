@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ljc
+      POSTGRES_PASSWORD: ljc
+      POSTGRES_DB: ljc
+      TZ: America/Maceio
+    ports: ["5432:5432"]
+    volumes: [ljc_pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ljc"]
+      interval: 5s
+      retries: 10
+volumes:
+  ljc_pgdata:
