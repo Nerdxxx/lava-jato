@@ -13,6 +13,9 @@ const ROLE_LABEL = {
 const NAV: { href: string; label: string; permission: Permission }[] = [
   { href: "/admin", label: "Início", permission: "agenda:ver" },
   { href: "/admin/agenda", label: "Agenda", permission: "agenda:ver" },
+  { href: "/admin/fila", label: "Fila", permission: "fila:ver" },
+  { href: "/admin/os", label: "Ordens de serviço", permission: "os:ver" },
+  { href: "/admin/clientes", label: "Clientes", permission: "clientes:ver" },
   { href: "/admin/configuracoes", label: "Configurações", permission: "configuracoes:gerir" },
 ];
 

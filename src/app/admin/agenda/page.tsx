@@ -2,6 +2,7 @@ import { and, asc, eq, gte, lt } from "drizzle-orm";
 import Link from "next/link";
 import { getDb } from "@/db/client";
 import { appointments, customers, resources, services } from "@/db/schema";
+import { Flash } from "@/components/layout/flash";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, EmptyState } from "@/components/ui/card";
 import { requirePermission } from "@/lib/auth";
@@ -10,6 +11,7 @@ import { addDays, formatTimeBR, isValidDateStr, localDateOf, localToUtc } from "
 import { formatBRL } from "@/lib/utils";
 import { CATEGORY_LABEL, STATUS_LABEL, STATUS_TONE } from "@/modules/scheduling/labels";
 import { canTransition, type AppointmentStatus } from "@/modules/scheduling/state-machine";
+import { checkInAction } from "../os/actions";
 import { changeStatusAction } from "./actions";
 
 export const metadata = { title: "Agenda" };
@@ -21,10 +23,10 @@ const ACTIONS: { to: AppointmentStatus; label: string; variant: "primary" | "out
   { to: "CANCELADO", label: "Cancelar", variant: "danger" },
 ];
 
-export default async function AgendaPage({ searchParams }: { searchParams: Promise<{ data?: string }> }) {
+export default async function AgendaPage({ searchParams }: { searchParams: Promise<{ data?: string; ok?: string; erro?: string }> }) {
   const user = await requirePermission("agenda:ver");
   const canManage = hasPermission(user.role, "agenda:gerir");
-  const { data } = await searchParams;
+  const { data, ok, erro } = await searchParams;
   const date = data && isValidDateStr(data) ? data : localDateOf(new Date());
 
   const db = await getDb();
@@ -69,6 +71,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
         </div>
       </div>
 
+      <Flash ok={ok} erro={erro} />
       {rows.length === 0 ? (
         <EmptyState title="Nenhum agendamento nesta data" />
       ) : (
@@ -96,6 +99,14 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
                 {a.notes && <p className="text-sm">Obs.: {a.notes}</p>}
                 {canManage && (
                   <div className="flex flex-wrap gap-2">
+                    {a.status === "CONFIRMADO" && hasPermission(user.role, "os:gerir") && (
+                      <form action={checkInAction}>
+                        <input type="hidden" name="appointmentId" value={a.id} />
+                        <Button type="submit" className="min-h-10 px-3">
+                          Fazer check-in
+                        </Button>
+                      </form>
+                    )}
                     {ACTIONS.filter((x) => canTransition(a.status, x.to)).map((x) => (
                       <form key={x.to} action={changeStatusAction}>
                         <input type="hidden" name="id" value={a.id} />

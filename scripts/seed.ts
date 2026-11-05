@@ -1,6 +1,14 @@
 import { eq } from "drizzle-orm";
 import { createDb } from "../src/db/client";
-import { operatingHours, resources, servicePrices, services, users } from "../src/db/schema";
+import {
+  operatingHours,
+  resources,
+  serviceChecklistTemplates,
+  servicePrices,
+  services,
+  users,
+} from "../src/db/schema";
+import { DEFAULT_EXTERNAL_CHECKLIST, DEFAULT_INTERIOR_CHECKLIST } from "../src/modules/operations/work-orders";
 import { hashPassword, validatePasswordStrength } from "../src/lib/password";
 
 type Cat = "MOTO" | "CARRO_PEQUENO" | "CARRO_MEDIO" | "SUV" | "PICAPE";
@@ -51,13 +59,29 @@ const handle = await createDb(url);
 await handle.migrate("./drizzle");
 const { db } = handle;
 
+const CHECKLISTS: Record<string, string[]> = {
+  "lavagem-externa": DEFAULT_EXTERNAL_CHECKLIST,
+  "lavagem-completa": [...DEFAULT_EXTERNAL_CHECKLIST, ...DEFAULT_INTERIOR_CHECKLIST],
+};
+
 for (const s of CATALOG) {
   const { prices, ...data } = s;
-  const existing = await db.select().from(services).where(eq(services.slug, s.slug)).limit(1);
-  if (existing.length) continue;
-  const [row] = await db.insert(services).values(data).returning();
-  for (const [category, priceCents] of Object.entries(prices)) {
-    await db.insert(servicePrices).values({ serviceId: row!.id, category: category as Cat, priceCents });
+  let [row] = await db.select().from(services).where(eq(services.slug, s.slug)).limit(1);
+  if (!row) {
+    [row] = await db.insert(services).values(data).returning();
+    for (const [category, priceCents] of Object.entries(prices)) {
+      await db.insert(servicePrices).values({ serviceId: row!.id, category: category as Cat, priceCents });
+    }
+  }
+  const hasTemplate = await db
+    .select({ id: serviceChecklistTemplates.id })
+    .from(serviceChecklistTemplates)
+    .where(eq(serviceChecklistTemplates.serviceId, row!.id))
+    .limit(1);
+  if (!hasTemplate.length) {
+    await db
+      .insert(serviceChecklistTemplates)
+      .values((CHECKLISTS[s.slug] ?? []).map((label, position) => ({ serviceId: row!.id, position, label })));
   }
 }
 

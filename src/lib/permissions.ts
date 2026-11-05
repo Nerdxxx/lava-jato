@@ -31,6 +31,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     "agenda:ver",
     "agenda:gerir",
     "fila:ver",
+    "fila:atualizar",
     "os:ver",
     "os:gerir",
     "clientes:ver",

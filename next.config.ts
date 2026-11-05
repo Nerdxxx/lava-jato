@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const config: NextConfig = {
-  serverExternalPackages: ["@node-rs/argon2", "@electric-sql/pglite", "pg"],
+  serverExternalPackages: ["@node-rs/argon2", "@electric-sql/pglite", "pg", "sharp"],
   poweredByHeader: false,
   async headers() {
     return [
