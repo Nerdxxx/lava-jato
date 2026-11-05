@@ -6,8 +6,27 @@
 | 1 Fundação | concluída |
 | 2 Agendamento | concluída (restam pendências de ambiente e agendamento pelo balcão) |
 | 3 Operação | concluída (pendências abaixo) |
-| 4 Financeiro | próxima |
-| 5–7 | não iniciadas |
+| 4 Financeiro | concluída (pendências abaixo) |
+| 5 Estoque | próxima |
+| 6–7 | não iniciadas |
+
+## Fase 4 — entregue
+- **Pagamentos** na OS (`/admin/os/[id]`): Dinheiro, Pix, débito, crédito e Outro; **pagamento dividido** (até 3 linhas por envio, tudo-ou-nada). Soma nunca ultrapassa o saldo; a linha da OS é travada (`FOR UPDATE`) contra recebimentos simultâneos; chave de idempotência contra reenvio.
+- **Status financeiro** da OS (PENDENTE/PARCIAL/PAGO/ESTORNADO/CANCELADO) derivado dos pagamentos na mesma transação. **Entrega exige pagamento integral.** Cancelar OS com pagamento exige estorno antes; desconto não pode ficar abaixo do já pago.
+- **Estorno** (só ADMINISTRADOR, com motivo): o pagamento nunca é apagado, fica ESTORNADO.
+- **Caixa** (`/admin/caixa`, ADMINISTRADOR e ATENDENTE): abertura, suprimento, sangria, estorno em dinheiro, fechamento com esperado × contado × diferença (observação obrigatória se houver diferença). Um único caixa aberto (índice único parcial). Dinheiro só entra com caixa aberto; Pix/cartão não passam pelo caixa. Caixa fechado é imutável.
+- **Despesas** (`/admin/despesas`) por categoria, pendente/paga/cancelada (cancelamento com motivo, nunca exclui).
+- **Financeiro** (`/admin/financeiro`): recebido (regime de caixa), por meio, estornos, despesas por categoria, resultado, OS entregues, ticket médio e a receber. **Painel** (`/admin`) com indicadores do dia/mês conforme permissão.
+- **Exportação** CSV (`;`, vírgula decimal, BOM) e XLSX de pagamentos e despesas por período, com neutralização de injeção de fórmula; registrada na auditoria.
+- Permissões novas: `financeiro:estornar` (admin), `caixa:operar` e `financeiro:receber` (atendente também). `financeiro:ver` (relatórios, despesas, exportação) só admin.
+- 19 testes novos (total 101).
+
+## Pendências da Fase 4
+- Recibo/comprovante imprimível e conciliação de cartão/Pix (taxas das operadoras não são modeladas).
+- Despesas recorrentes e anexos de comprovante.
+- Pagamento online (Pix/cartão por gateway) — fora do escopo até haver conta no provedor.
+- Corrida real de recebimentos e abertura de caixa contra PostgreSQL (hoje só PGlite; ver `PENDENTE INSTALAÇÃO.md`).
+- Troco: o valor em dinheiro registrado é o aplicado à OS (o troco é manual).
 
 ## Fase 3 — entregue
 - **Check-in** de agendamento confirmado → OS (idempotente; agendamento vira CONVERTIDO_EM_OS e, na entrega, CONCLUIDO). Preço contratado é snapshot.

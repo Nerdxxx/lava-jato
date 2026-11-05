@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { createDb } from "../src/db/client";
 import {
+  expenseCategories,
   operatingHours,
   resources,
   serviceChecklistTemplates,
@@ -9,6 +10,7 @@ import {
   users,
 } from "../src/db/schema";
 import { DEFAULT_EXTERNAL_CHECKLIST, DEFAULT_INTERIOR_CHECKLIST } from "../src/modules/operations/work-orders";
+import { DEFAULT_EXPENSE_CATEGORIES } from "../src/modules/finance/expenses";
 import { hashPassword, validatePasswordStrength } from "../src/lib/password";
 
 type Cat = "MOTO" | "CARRO_PEQUENO" | "CARRO_MEDIO" | "SUV" | "PICAPE";
@@ -87,6 +89,9 @@ for (const s of CATALOG) {
 
 if ((await db.select().from(resources).limit(1)).length === 0) {
   await db.insert(resources).values({ name: "Vaga 1" });
+}
+if ((await db.select().from(expenseCategories).limit(1)).length === 0) {
+  await db.insert(expenseCategories).values(DEFAULT_EXPENSE_CATEGORIES.map((name) => ({ name })));
 }
 // Horário padrão inicial (seg–sáb, 08:00–18:00). Ajustável no painel — confirme com o negócio.
 if ((await db.select().from(operatingHours).limit(1)).length === 0) {

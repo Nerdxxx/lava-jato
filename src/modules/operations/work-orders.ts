@@ -14,6 +14,7 @@ import {
   workOrderStatusHistory,
   workOrders,
 } from "@/db/schema";
+import { amountDue, getPaymentSummary, recomputeFinancialStatus } from "@/modules/finance/payments";
 import { normalizePhone, normalizePlate } from "@/lib/phone";
 import { VEHICLE_CATEGORIES } from "@/modules/scheduling/booking";
 import { canTransitionWorkOrder, REQUIRES_COMPLETE_CHECKLIST, type WorkOrderStatus } from "./state-machine";
@@ -111,6 +112,7 @@ async function insertWorkOrder(
       priceCents: data.priceCents,
       notes: data.notes,
       status: "RECEBIDO",
+      financialStatus: data.priceCents === 0 ? "PAGO" : "PENDENTE",
       createdBy: data.userId,
     })
     .returning();
@@ -257,6 +259,14 @@ export async function changeWorkOrderStatus(
     if (pending.length > 0) return fail(`Conclua o checklist antes de avançar (${pending.length} item(ns) pendente(s)).`);
   }
 
+  if (to === "ENTREGUE" && wo.financialStatus !== "PAGO") {
+    return fail("Só é possível entregar após o pagamento integral. Registre o recebimento na OS.");
+  }
+  if (to === "CANCELADO") {
+    const sum = await getPaymentSummary(db, wo.id);
+    if (sum && sum.paidCents > 0) return fail("Esta OS tem pagamentos. Estorne os pagamentos antes de cancelar.");
+  }
+
   const patch: Partial<typeof workOrders.$inferInsert> = { status: to };
   if (to === "EM_LAVAGEM" && !wo.startedAt) patch.startedAt = now;
   if (to === "PRONTO_PARA_ENTREGA") patch.finishedAt = now;
@@ -273,6 +283,7 @@ export async function changeWorkOrderStatus(
       await tx
         .insert(workOrderStatusHistory)
         .values({ workOrderId: wo.id, fromStatus: wo.status, toStatus: to, changedBy: userId, note: note ?? null });
+      if (to === "CANCELADO") await tx.update(workOrders).set({ financialStatus: "CANCELADO" }).where(eq(workOrders.id, wo.id));
       if (to === "ENTREGUE" && wo.appointmentId) {
         await tx
           .update(appointments)
@@ -342,7 +353,14 @@ export async function applyDiscount(db: Database, workOrderId: string, discountC
   if (!wo) return fail("Ordem de serviço não encontrada.");
   if (wo.status === "ENTREGUE" || wo.status === "CANCELADO") return fail("A OS já foi encerrada.");
   if (discountCents > wo.priceCents) return fail("O desconto não pode ser maior que o valor do serviço.");
-  await db.update(workOrders).set({ discountCents }).where(eq(workOrders.id, workOrderId));
+  const sum = await getPaymentSummary(db, workOrderId);
+  if (sum && sum.paidCents > amountDue({ priceCents: wo.priceCents, discountCents })) {
+    return fail("O desconto deixaria o valor da OS abaixo do que já foi pago. Estorne antes.");
+  }
+  await db.transaction(async (tx) => {
+    await tx.update(workOrders).set({ discountCents }).where(eq(workOrders.id, workOrderId));
+    await recomputeFinancialStatus(tx, workOrderId);
+  });
   return { ok: true, value: undefined };
 }
 

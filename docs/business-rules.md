@@ -20,8 +20,15 @@ Status que ocupam vaga: PENDENTE, CONFIRMADO, CONVERTIDO_EM_OS.
 ## Catálogo
 Tabela inicial (editável, em centavos): Moto externa 2000; Pequeno 4000/6000; Médio 4000/7000; SUV 6000/9000; Picape 6000/10000. Moto não tem lavagem completa. Serviços não anunciados (polimento, vitrificação etc.) não são cadastrados.
 
-## OS, financeiro, estoque, fidelidade
-Definidos no PROMPT MESTRE; detalhados aqui ao serem implementados (Fases 3–5, 6).
+## Financeiro (Fase 4)
+- Valor a cobrar = preço contratado (snapshot) − desconto autorizado. Valores em centavos.
+- Pagamento: valor > 0 e ≤ saldo. Dinheiro exige caixa aberto. Estorno só por administrador, com motivo; nada é apagado.
+- A OS só é entregue com status financeiro PAGO. OS com pagamento não é cancelada sem estorno.
+- Caixa: esperado = abertura + dinheiro recebido + suprimentos − sangrias − estornos em dinheiro. Sangria não excede o saldo. Fechamento é imutável.
+- Resultado = recebido (regime de caixa) − despesas do período (pagas e pendentes, exceto canceladas).
+
+## OS, estoque, fidelidade
+Definidos no PROMPT MESTRE; OS (Fase 3) e financeiro (Fase 4) acima; estoque e fidelidade detalhados ao serem implementados (Fases 5–6).
 
 ## Perfis
 ADMINISTRADOR (tudo), FUNCIONARIO (agenda, fila, OS atribuídas, checklist, fotos), ATENDENTE (agenda, clientes, veículos, check-in, recebimentos se autorizado), CLIENTE (somente próprios dados).

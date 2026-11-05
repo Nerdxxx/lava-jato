@@ -33,6 +33,8 @@ export const workOrderStatusEnum = pgEnum("work_order_status", [
 
 export const photoKindEnum = pgEnum("photo_kind", ["ANTES", "DURANTE", "DEPOIS", "AVARIA"]);
 
+export const financialStatusEnum = pgEnum("financial_status", ["PENDENTE", "PARCIAL", "PAGO", "ESTORNADO", "CANCELADO"]);
+
 /** Modelo de checklist por serviço. Copiado para cada OS no momento da criação. */
 export const serviceChecklistTemplates = pgTable(
   "service_checklist_templates",
@@ -70,6 +72,8 @@ export const workOrders = pgTable(
     discountCents: integer("discount_cents").notNull().default(0),
     assignedTo: uuid("assigned_to").references(() => users.id),
     status: workOrderStatusEnum("status").notNull().default("RECEBIDO"),
+    /** Derivado dos pagamentos; atualizado na mesma transação de cada pagamento/estorno. */
+    financialStatus: financialStatusEnum("financial_status").notNull().default("PENDENTE"),
     notes: text("notes"),
     receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
     startedAt: timestamp("started_at", { withTimezone: true }),

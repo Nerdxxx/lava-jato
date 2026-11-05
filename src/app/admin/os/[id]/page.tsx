@@ -9,6 +9,11 @@ import { hasPermission } from "@/lib/permissions";
 import { formatDateTimeBR } from "@/lib/time";
 import { canAccessWorkOrder } from "@/lib/work-order-access";
 import { formatBRL } from "@/lib/utils";
+import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
+import { payments } from "@/db/schema";
+import { amountDue, FINANCIAL_STATUS_LABEL, getPaymentSummary, PAYMENT_METHOD_LABEL, PAYMENT_METHODS } from "@/modules/finance/payments";
+import { receivePaymentAction, refundPaymentAction } from "../../financeiro/actions";
 import { getWorkOrderDetail, listStaff } from "@/modules/operations/queries";
 import { PHOTO_KINDS } from "@/modules/operations/photos";
 import { formatOsNumber, nextStatuses, WORK_ORDER_STATUS_LABEL, type WorkOrderStatus } from "@/modules/operations/state-machine";
@@ -53,6 +58,11 @@ export default async function WorkOrderPage({
   const staff = canAssign ? await listStaff(db) : [];
   const done = checklist.filter((c) => c.done).length;
   const finalCents = wo.priceCents - wo.discountCents;
+  const canSeeMoney = canDiscount || hasPermission(user.role, "financeiro:ver");
+  const canRefund = hasPermission(user.role, "financeiro:estornar");
+  const paymentRows = canSeeMoney ? await db.select().from(payments).where(eq(payments.workOrderId, wo.id)).orderBy(payments.createdAt) : [];
+  const pay = canSeeMoney ? await getPaymentSummary(db, wo.id) : null;
+  const idemKey = randomUUID();
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -212,6 +222,68 @@ export default async function WorkOrderPage({
               Salvar
             </Button>
           </form>
+        </Card>
+      )}
+
+      {canSeeMoney && pay && (
+        <Card className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-bold">Pagamento</h2>
+            <Badge tone={wo.financialStatus === "PAGO" ? "success" : wo.financialStatus === "CANCELADO" ? "danger" : "warning"}>
+              {FINANCIAL_STATUS_LABEL[wo.financialStatus]}
+            </Badge>
+          </div>
+          <p className="text-sm">
+            Total {formatBRL(amountDue(wo))} · pago {formatBRL(pay.paidCents)} · <strong>saldo {formatBRL(pay.remainingCents)}</strong>
+          </p>
+          {paymentRows.length > 0 && (
+            <ul className="divide-y divide-line text-sm">
+              {paymentRows.map((p) => (
+                <li key={p.id} className="space-y-1 py-1.5">
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <span>
+                      <span className="text-muted">{formatDateTimeBR(p.createdAt)}</span> · {PAYMENT_METHOD_LABEL[p.method]}
+                      {p.methodLabel ? ` (${p.methodLabel})` : ""}
+                      {p.status === "ESTORNADO" ? " · estornado" : ""}
+                    </span>
+                    <span className={p.status === "ESTORNADO" ? "text-muted line-through" : ""}>{formatBRL(p.amountCents)}</span>
+                  </div>
+                  {p.refundReason && <p className="text-xs text-muted">Estorno: {p.refundReason}</p>}
+                  {canRefund && p.status === "PAGO" && (
+                    <form action={refundPaymentAction} className="flex flex-wrap gap-2">
+                      <input type="hidden" name="paymentId" value={p.id} />
+                      <input type="hidden" name="workOrderId" value={wo.id} />
+                      <Input name="reason" placeholder="Motivo do estorno" required minLength={3} maxLength={300} aria-label="Motivo do estorno" className="max-w-xs" />
+                      <Button type="submit" variant="danger">
+                        Estornar
+                      </Button>
+                    </form>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {canDiscount && wo.status !== "CANCELADO" && pay.remainingCents > 0 && (
+            <form action={receivePaymentAction} className="space-y-3 border-t border-line pt-3">
+              <input type="hidden" name="workOrderId" value={wo.id} />
+              <input type="hidden" name="idempotencyKey" value={idemKey} />
+              <p className="text-sm text-muted">Para pagamento dividido, preencha mais de uma linha. Dinheiro exige caixa aberto.</p>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="grid gap-2 sm:grid-cols-[10rem_8rem_1fr]">
+                  <select name={`method${i}`} aria-label={`Meio de pagamento ${i + 1}`} defaultValue={i === 0 ? "PIX" : "DINHEIRO"} className="min-h-11 rounded-lg border border-line bg-surface px-3">
+                    {PAYMENT_METHODS.map((m) => (
+                      <option key={m} value={m}>
+                        {PAYMENT_METHOD_LABEL[m]}
+                      </option>
+                    ))}
+                  </select>
+                  <Input name={`amount${i}`} inputMode="decimal" placeholder={i === 0 ? (pay.remainingCents / 100).toFixed(2).replace(".", ",") : "0,00"} aria-label={`Valor ${i + 1}`} />
+                  <Input name={`ref${i}`} placeholder="Referência / descrição (opcional)" maxLength={80} aria-label={`Referência ${i + 1}`} />
+                </div>
+              ))}
+              <Button type="submit">Registrar pagamento</Button>
+            </form>
+          )}
         </Card>
       )}
 

@@ -15,6 +15,8 @@ export const PERMISSIONS = [
   "servicos:gerir",
   "financeiro:ver",
   "financeiro:receber",
+  "financeiro:estornar",
+  "caixa:operar",
   "estoque:gerir",
   "funcionarios:gerir",
   "configuracoes:gerir",
@@ -37,6 +39,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     "clientes:ver",
     "clientes:gerir",
     "veiculos:gerir",
+    "financeiro:receber",
+    "caixa:operar",
   ],
   CLIENTE: ["proprio:ver"],
 };

@@ -24,6 +24,7 @@ import {
   createWalkInWorkOrder,
   toggleChecklistItem,
 } from "@/modules/operations/work-orders";
+import { recordPayments } from "@/modules/finance/payments";
 import { changeStatus, createAppointment } from "@/modules/scheduling/booking";
 import { saveOperatingHours } from "@/modules/scheduling/config";
 
@@ -166,6 +167,7 @@ describe("fluxo da OS", () => {
     for (const i of items) await toggleChecklistItem(db, i.id, true, staff.id);
     expect((await go("AGUARDANDO_INSPECAO")).ok).toBe(true);
     expect((await go("PRONTO_PARA_ENTREGA")).ok).toBe(true);
+    await recordPayments(db, wo.id, [{ method: "PIX", amountCents: 4000 }], staff.id);
     const done = await go("ENTREGUE");
     expect(done.ok).toBe(true);
     const [row] = await db.select().from(workOrders).where(eq(workOrders.id, wo.id));
@@ -204,6 +206,7 @@ describe("fluxo da OS", () => {
     }
     await go("AGUARDANDO_INSPECAO");
     await go("PRONTO_PARA_ENTREGA");
+    await recordPayments(s.db, ci.value.id, [{ method: "PIX", amountCents: 4000 }], s.staff.id);
     expect((await go("ENTREGUE")).ok).toBe(true);
     const [a] = await s.db.select().from(appointments).where(eq(appointments.id, appt.id));
     expect(a!.status).toBe("CONCLUIDO");

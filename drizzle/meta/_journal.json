@@ -22,6 +22,20 @@
       "when": 1793893092226,
       "tag": "0002_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793894323437,
+      "tag": "0003_finance",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793894325311,
+      "tag": "0004_cash_one_open",
+      "breakpoints": true
     }
   ]
 }
