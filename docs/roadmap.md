@@ -51,7 +51,7 @@
 ## Pendências da Fase 2
 - Agendamento criado pela equipe (por telefone) no painel — hoje só atendimento sem agendamento (OS direta).
 - Concorrência real contra PostgreSQL (precisa Docker — ver `PENDENTE INSTALAÇÃO.md`).
-- E2E com Playwright (depende do navegador do Playwright).
+- E2E com Playwright: smoke em `tests/e2e/smoke.spec.ts` (páginas públicas, login, navegação do painel). Falta cobrir os fluxos completos (agendar, OS, pagamento).
 - Rate limit em memória (1 instância).
 - Valores provisórios a confirmar: expediente seg–sáb 8–18h, duração 40/70 min, 1 vaga, preparação 10 min, passo 30 min, cancelamento até 2h antes (todos editáveis em Configurações).
 

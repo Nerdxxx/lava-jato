@@ -16,8 +16,8 @@ winget install -e --id Docker.DockerDesktop
 ```
 Abra o Docker Desktop, aceite os termos e aguarde "Engine running". Confirme com `docker --version` e `docker compose version`.
 
-## 3. Navegador do Playwright (testes E2E) — PENDENTE
-Na pasta `ljc-system`:
+## 3. Navegador do Playwright (testes E2E) — CONCLUÍDO (2026-11-05)
+Na pasta do projeto (já instalado):
 ```
 npx playwright install chromium
 ```
