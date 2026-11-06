@@ -1,0 +1,42 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ljc
+          POSTGRES_PASSWORD: ljc
+          POSTGRES_DB: ljc
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ljc" --health-interval 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://ljc:ljc@localhost:5432/ljc
+      TEST_POSTGRES_URL: postgres://ljc:ljc@localhost:5432/ljc_test
+      APP_URL: http://localhost:3000
+      APP_SECRET: ci-secret-not-for-production-0123456789
+      TZ: America/Maceio
+      SEED_ADMIN_EMAIL: admin@ci.local
+      SEED_ADMIN_PASSWORD: CiSenha12345
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: PGPASSWORD=ljc psql -h localhost -U ljc -d ljc -c "CREATE DATABASE ljc_test"
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run db:migrate && npm run db:seed
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

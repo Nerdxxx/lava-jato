@@ -19,6 +19,11 @@ import { PHOTO_KINDS } from "@/modules/operations/photos";
 import { formatOsNumber, nextStatuses, WORK_ORDER_STATUS_LABEL, type WorkOrderStatus } from "@/modules/operations/state-machine";
 import { CATEGORY_LABEL } from "@/modules/scheduling/labels";
 import { assignAction, changeStatusAction, discountAction, notesAction, toggleChecklistAction } from "../actions";
+import { redeemAction, undoRedeemAction } from "../../fidelidade/actions";
+import { WhatsAppButton } from "@/components/whatsapp-button";
+import { listConsumptionForWorkOrder } from "@/modules/inventory/inventory";
+import { getActiveRedemption, getBalance, loadLoyaltyConfig } from "@/modules/loyalty/loyalty";
+import { listNotificationsFor, TEMPLATE_LABEL } from "@/modules/notifications/whatsapp";
 
 export const metadata = { title: "Ordem de serviço" };
 export const dynamic = "force-dynamic";
@@ -63,6 +68,11 @@ export default async function WorkOrderPage({
   const paymentRows = canSeeMoney ? await db.select().from(payments).where(eq(payments.workOrderId, wo.id)).orderBy(payments.createdAt) : [];
   const pay = canSeeMoney ? await getPaymentSummary(db, wo.id) : null;
   const idemKey = randomUUID();
+  const loyalty = canSeeMoney ? await loadLoyaltyConfig(db) : null;
+  const loyaltyBalance = loyalty?.enabled ? await getBalance(db, wo.customerId) : 0;
+  const redemption = loyalty?.enabled ? await getActiveRedemption(db, wo.id) : null;
+  const consumption = wo.status === "ENTREGUE" && hasPermission(user.role, "estoque:gerir") ? await listConsumptionForWorkOrder(db, wo.id) : [];
+  const sent = canSeeCustomer ? await listNotificationsFor(db, { workOrderId: wo.id }, 5) : [];
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -70,9 +80,16 @@ export default async function WorkOrderPage({
         <h1 className="text-2xl font-extrabold text-navy-950">
           {formatOsNumber(wo.number)} · {wo.vehicleModel}
         </h1>
-        <Badge tone={wo.status === "CANCELADO" ? "danger" : wo.status === "ENTREGUE" ? "success" : "info"}>
-          {WORK_ORDER_STATUS_LABEL[wo.status]}
-        </Badge>
+        <div className="flex items-center gap-3">
+          {canSeeMoney && (
+            <a href={`/admin/os/${wo.id}/recibo`} target="_blank" rel="noopener" className="text-sm underline">
+              Recibo
+            </a>
+          )}
+          <Badge tone={wo.status === "CANCELADO" ? "danger" : wo.status === "ENTREGUE" ? "success" : "info"}>
+            {WORK_ORDER_STATUS_LABEL[wo.status]}
+          </Badge>
+        </div>
       </div>
       <Flash ok={ok} erro={erro} />
 
@@ -284,6 +301,63 @@ export default async function WorkOrderPage({
               <Button type="submit">Registrar pagamento</Button>
             </form>
           )}
+        </Card>
+      )}
+
+      {loyalty?.enabled && wo.status !== "CANCELADO" && (
+        <Card className="space-y-2">
+          <h2 className="font-bold">Fidelidade</h2>
+          <p className="text-sm">
+            Saldo do cliente: <strong>{loyaltyBalance}</strong> de {loyalty.visitsRequired} pontos
+            {redemption ? ` · resgate aplicado nesta OS (${formatBRL(redemption.discountCents)} de desconto)` : ""}
+          </p>
+          {canDiscount && !closed && !redemption && loyaltyBalance >= loyalty.visitsRequired && (
+            <form action={redeemAction}>
+              <input type="hidden" name="workOrderId" value={wo.id} />
+              <Button type="submit">Usar prêmio ({loyalty.rewardPercent}% de desconto)</Button>
+            </form>
+          )}
+          {canDiscount && !closed && redemption && (
+            <form action={undoRedeemAction}>
+              <input type="hidden" name="workOrderId" value={wo.id} />
+              <Button type="submit" variant="outline">
+                Desfazer resgate
+              </Button>
+            </form>
+          )}
+        </Card>
+      )}
+
+      {canSeeCustomer && wo.status !== "CANCELADO" && (
+        <Card className="space-y-2">
+          <h2 className="font-bold">Avisar o cliente</h2>
+          <div className="flex flex-wrap gap-2">
+            {!closed && <WhatsAppButton kind="os" id={wo.id} template="OS_RECEBIDA" label="Veículo recebido" />}
+            {!closed && <WhatsAppButton kind="os" id={wo.id} template="OS_PRONTA" label="Pronto para retirada" />}
+            {wo.status === "ENTREGUE" && <WhatsAppButton kind="os" id={wo.id} template="OS_AGRADECIMENTO" label="Agradecer" />}
+          </div>
+          {sent.length > 0 && (
+            <ul className="text-xs text-muted">
+              {sent.map((n) => (
+                <li key={n.id}>
+                  {formatDateTimeBR(n.createdAt)} · {TEMPLATE_LABEL[n.template as keyof typeof TEMPLATE_LABEL] ?? n.template}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
+
+      {consumption.length > 0 && (
+        <Card className="space-y-2">
+          <h2 className="font-bold">Produtos consumidos</h2>
+          <ul className="text-sm">
+            {consumption.map((c) => (
+              <li key={c.name}>
+                {c.name}: {(-c.delta).toLocaleString("pt-BR")} {c.unit}
+              </li>
+            ))}
+          </ul>
         </Card>
       )}
 

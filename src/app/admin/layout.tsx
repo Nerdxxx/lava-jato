@@ -19,6 +19,8 @@ const NAV: { href: string; label: string; permission: Permission }[] = [
   { href: "/admin/financeiro", label: "Financeiro", permission: "financeiro:ver" },
   { href: "/admin/despesas", label: "Despesas", permission: "financeiro:ver" },
   { href: "/admin/clientes", label: "Clientes", permission: "clientes:ver" },
+  { href: "/admin/estoque", label: "Estoque", permission: "estoque:gerir" },
+  { href: "/admin/fidelidade", label: "Fidelidade", permission: "configuracoes:gerir" },
   { href: "/admin/funcionarios", label: "Funcionários", permission: "funcionarios:gerir" },
   { href: "/admin/configuracoes", label: "Configurações", permission: "configuracoes:gerir" },
   { href: "/admin/conta", label: "Minha conta", permission: "agenda:ver" },

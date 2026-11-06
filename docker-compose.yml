@@ -1,17 +1,39 @@
+# Desenvolvimento: `docker compose up -d db` (só o banco).
+# Produção no servidor: `docker compose --profile prod up -d --build` (banco + app).
 services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ljc
-      POSTGRES_PASSWORD: ljc
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ljc}
       POSTGRES_DB: ljc
       TZ: America/Maceio
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:5432:5432"]
     volumes: [ljc_pgdata:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ljc"]
       interval: 5s
       retries: 10
+
+  app:
+    profiles: ["prod"]
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://ljc:${POSTGRES_PASSWORD:-ljc}@db:5432/ljc
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      APP_SECRET: ${APP_SECRET:?defina APP_SECRET no .env}
+      STORAGE_DIR: /app/storage
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      TZ: America/Maceio
+    ports: ["3000:3000"]
+    volumes: [ljc_storage:/app/storage]
+
 volumes:
   ljc_pgdata:
+  ljc_storage:

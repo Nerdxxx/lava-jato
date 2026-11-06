@@ -16,17 +16,22 @@ export function BookingWizard({
   catalog,
   minDate,
   maxDate,
+  action: submitAction = createBookingAction,
+  staff = false,
 }: {
   catalog: CatalogService[];
   minDate: string;
   maxDate: string;
+  /** Ação de envio (o painel usa uma ação própria que já confirma o agendamento). */
+  action?: (prev: BookingState, fd: FormData) => Promise<BookingState>;
+  staff?: boolean;
 }) {
   const [step, setStep] = useState(0);
   const [category, setCategory] = useState<string | null>(null);
   const [serviceId, setServiceId] = useState<string | null>(null);
   const [startsAt, setStartsAt] = useState<string | null>(null);
   const [data, setData] = useState({ name: "", phone: "", vehicleModel: "", plate: "", notes: "" });
-  const [state, action, pending] = useActionState<BookingState, FormData>(createBookingAction, {});
+  const [state, action, pending] = useActionState<BookingState, FormData>(submitAction, {});
 
   const service = catalog.find((s) => s.id === serviceId);
   const available = category ? catalog.filter((s) => s.prices[category] !== undefined) : [];
@@ -55,7 +60,7 @@ export function BookingWizard({
 
       {step === 0 && (
         <Card className="space-y-3">
-          <h2 className="font-bold">Qual é o seu veículo?</h2>
+          <h2 className="font-bold">{staff ? "Qual é o veículo do cliente?" : "Qual é o seu veículo?"}</h2>
           <div className="grid gap-2 sm:grid-cols-2">
             {CATEGORY_ORDER.map((c) => (
               <button
@@ -137,7 +142,7 @@ export function BookingWizard({
 
       {step === 3 && (
         <Card className="space-y-4">
-          <h2 className="font-bold">Seus dados</h2>
+          <h2 className="font-bold">{staff ? "Dados do cliente" : "Seus dados"}</h2>
           <Field label="Nome" htmlFor="name">
             <Input id="name" value={data.name} onChange={set("name")} autoComplete="name" maxLength={120} />
           </Field>
@@ -191,7 +196,9 @@ export function BookingWizard({
               </dd>
             </dl>
             <p className="text-xs text-muted">
-              O valor é pago no local. Seu pedido fica aguardando confirmação do lava jato.
+              {staff
+                ? "O agendamento será criado já confirmado."
+                : "O valor é pago no local. Seu pedido fica aguardando confirmação do lava jato."}
             </p>
             {Object.entries({ category, serviceId, startsAt, ...data }).map(([k, v]) => (
               <input key={k} type="hidden" name={k} value={v ?? ""} />
@@ -206,7 +213,7 @@ export function BookingWizard({
                 Voltar
               </Button>
               <Button type="submit" disabled={pending}>
-                {pending ? "Enviando..." : "Solicitar agendamento"}
+                {pending ? "Enviando..." : staff ? "Agendar e confirmar" : "Solicitar agendamento"}
               </Button>
             </div>
           </Card>

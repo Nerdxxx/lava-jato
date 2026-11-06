@@ -5,7 +5,9 @@ import { z } from "zod";
 import { getDb } from "@/db/client";
 import { auditLogs } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
+import { cookies } from "next/headers";
 import { addVehicle, updateCustomer } from "@/modules/customers/customers";
+import { createPortalAccess, PORTAL_LINK_COOKIE } from "@/modules/customers/portal";
 
 const uuid = z.string().uuid();
 const str = (fd: FormData, k: string) => {
@@ -48,4 +50,19 @@ export async function addVehicleAction(fd: FormData): Promise<void> {
   if (!res.ok) back(id.data, "erro", res.message);
   await (await getDb()).insert(auditLogs).values({ userId: user.id, action: "vehicle.create", entity: "vehicle", entityId: res.value.id });
   back(id.data, "ok", "Veículo cadastrado.");
+}
+
+/** Gera o link de primeiro acesso / redefinição de senha do portal do cliente. */
+export async function portalAccessAction(fd: FormData): Promise<void> {
+  const user = await requirePermission("clientes:gerir");
+  const customerId = typeof fd.get("customerId") === "string" ? String(fd.get("customerId")) : "";
+  if (!/^[0-9a-f-]{36}$/i.test(customerId)) redirect("/admin/clientes");
+  const dest = `/admin/clientes/${customerId}`;
+  const db = await getDb();
+  const res = await createPortalAccess(db, customerId, typeof fd.get("email") === "string" ? String(fd.get("email")) : "", user.id);
+  if (!res.ok) redirect(`${dest}?erro=${encodeURIComponent(res.message)}`);
+  await db.insert(auditLogs).values({ userId: user.id, action: "customer.portal_link", entity: "customer", entityId: customerId });
+  // O link é mostrado uma vez a quem gerou (cookie httpOnly curto), sem ir para a URL/histórico.
+  (await cookies()).set(PORTAL_LINK_COOKIE, res.value.token, { httpOnly: true, sameSite: "strict", path: dest, maxAge: 600, secure: process.env.NODE_ENV === "production" });
+  redirect(`${dest}?ok=${encodeURIComponent("Link de acesso gerado. Envie ao cliente pelo WhatsApp (vale 48 h, uso único).")}`);
 }

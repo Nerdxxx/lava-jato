@@ -27,8 +27,19 @@ Tabela inicial (editável, em centavos): Moto externa 2000; Pequeno 4000/6000; M
 - Caixa: esperado = abertura + dinheiro recebido + suprimentos − sangrias − estornos em dinheiro. Sangria não excede o saldo. Fechamento é imutável.
 - Resultado = recebido (regime de caixa) − despesas do período (pagas e pendentes, exceto canceladas).
 
-## OS, estoque, fidelidade
-Definidos no PROMPT MESTRE; OS (Fase 3) e financeiro (Fase 4) acima; estoque e fidelidade detalhados ao serem implementados (Fases 5–6).
+## Estoque (Fase 5)
+- Quantidades inteiras na menor unidade controlada (ml, g, un). Saída manual exige motivo e não deixa saldo negativo; ajuste informa a quantidade contada e exige motivo.
+- Na entrega da OS, o estoque baixa conforme as regras do serviço (regra da categoria substitui a geral). OS cancelada não consome.
+- Nível: OK, Baixo (≤ mínimo), Zerado, Negativo (consumo automático acima do saldo — conferir cadastro).
+
+## Fidelidade (Fase 6)
+- Desativada por padrão. Cada OS entregue com valor > 0 e sem resgate gera 1 ponto.
+- Resgate: exige saldo ≥ pontos necessários; desconto = % do preço do serviço, limitado ao valor restante; não pode deixar o valor abaixo do já pago. Um resgate ativo por OS.
+- Desfazer resgate (OS aberta) devolve pontos e remove o desconto; cancelar a OS devolve os pontos.
+
+## Portal do cliente (Fase 6)
+- Cliente só vê os próprios dados (filtro pelo cliente vinculado à sessão), inclusive fotos.
+- Vincular conta a um cadastro existente exige o código de um agendamento desse cliente, ou link gerado pela equipe.
 
 ## Perfis
 ADMINISTRADOR (tudo), FUNCIONARIO (agenda, fila, OS atribuídas, checklist, fotos), ATENDENTE (agenda, clientes, veículos, check-in, recebimentos se autorizado), CLIENTE (somente próprios dados).

@@ -20,8 +20,8 @@ export function Shell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[15rem_1fr]">
-      <aside className="bg-navy-950 text-white md:sticky md:top-0 md:h-dvh">
+    <div className="min-h-dvh md:grid md:grid-cols-[15rem_1fr] print:block">
+      <aside data-print-hide className="bg-navy-950 text-white md:sticky md:top-0 md:h-dvh">
         <div className="flex items-center justify-between p-4 md:block">
           <Brand light />
         </div>
@@ -38,7 +38,7 @@ export function Shell({
         </nav>
       </aside>
       <div className="min-w-0">
-        <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3">
+        <header data-print-hide className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3">
           <p className="text-sm">
             <span className="font-semibold">{userName}</span> <span className="text-muted">· {roleLabel}</span>
           </p>

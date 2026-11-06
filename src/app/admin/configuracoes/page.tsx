@@ -8,6 +8,7 @@ import { requirePermission } from "@/lib/auth";
 import { formatDateTimeBR, localDateOf } from "@/lib/time";
 import { CATEGORY_LABEL, CATEGORY_ORDER } from "@/modules/scheduling/labels";
 import { loadSettings } from "@/modules/scheduling/settings";
+import { loadProfile } from "@/modules/business/profile";
 import {
   addBlockAction,
   addHolidayAction,
@@ -17,6 +18,7 @@ import {
   saveHoursAction,
   saveServiceAction,
   saveSettingsAction,
+  saveProfileAction,
   toggleResourceAction,
 } from "./actions";
 
@@ -49,6 +51,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const db = await getDb();
   const today = localDateOf(new Date());
 
+  const profile = await loadProfile(db);
   const [settings, hours, resourceRows, holidayRows, blockRows, serviceRows, priceRows] = await Promise.all([
     loadSettings(db),
     db.select().from(operatingHours).orderBy(asc(operatingHours.opensAt)),
@@ -61,7 +64,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-extrabold text-navy-950">Configurações da agenda</h1>
+      <h1 className="text-2xl font-extrabold text-navy-950">Configurações</h1>
       {ok && (
         <p role="status" className="rounded-lg bg-success/10 p-3 text-sm text-success">
           {ok}
@@ -72,6 +75,32 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           {erro}
         </p>
       )}
+
+      <Section title="Dados do negócio" hint="Aparecem no site, no recibo e nas mensagens de WhatsApp.">
+        <form action={saveProfileAction} className="grid gap-4 sm:grid-cols-2">
+          <Field label="Nome" htmlFor="pf-name">
+            <Input id="pf-name" name="name" defaultValue={profile.name} required maxLength={80} />
+          </Field>
+          <Field label="WhatsApp do lava jato (com DDD)" htmlFor="pf-wa">
+            <Input id="pf-wa" name="whatsapp" defaultValue={profile.whatsapp} inputMode="tel" placeholder="(79) 99999-9999" />
+          </Field>
+          <Field label="Endereço" htmlFor="pf-address">
+            <Input id="pf-address" name="address" defaultValue={profile.address} maxLength={200} />
+          </Field>
+          <Field label="Link do Google Maps (opcional)" htmlFor="pf-maps">
+            <Input id="pf-maps" name="mapsUrl" defaultValue={profile.mapsUrl} placeholder="https://maps.app.goo.gl/..." maxLength={500} />
+          </Field>
+          <Field label="Instagram (opcional)" htmlFor="pf-ig">
+            <Input id="pf-ig" name="instagram" defaultValue={profile.instagram} placeholder="lavajatocapua" maxLength={40} />
+          </Field>
+          <Field label="Chave Pix para o recibo (opcional)" htmlFor="pf-pix">
+            <Input id="pf-pix" name="pixKey" defaultValue={profile.pixKey} maxLength={120} />
+          </Field>
+          <div className="sm:col-span-2">
+            <Button type="submit">Salvar dados do negócio</Button>
+          </div>
+        </form>
+      </Section>
 
       <Section title="Regras de agendamento" hint="Valem para novos agendamentos. Os já criados não mudam.">
         <form action={saveSettingsAction} className="grid gap-4 sm:grid-cols-2">

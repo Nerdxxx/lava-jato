@@ -1,10 +1,16 @@
 import { Shell } from "@/components/layout/shell";
 import { requireCustomer } from "@/lib/auth";
 
+const NAV = [
+  { href: "/cliente", label: "Meu painel" },
+  { href: "/agendar", label: "Agendar lavagem" },
+  { href: "/cliente/conta", label: "Minha conta" },
+];
+
 export default async function CustomerLayout({ children }: { children: React.ReactNode }) {
   const user = await requireCustomer();
   return (
-    <Shell nav={[{ href: "/cliente", label: "Meu painel" }]} userName={user.name} roleLabel="Cliente">
+    <Shell nav={NAV} userName={user.name} roleLabel="Cliente">
       {children}
     </Shell>
   );

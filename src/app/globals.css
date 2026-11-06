@@ -46,3 +46,15 @@ body {
   outline: 3px solid var(--color-aqua-400);
   outline-offset: 2px;
 }
+
+@media print {
+  [data-print-hide] {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  main {
+    padding: 0 !important;
+  }
+}

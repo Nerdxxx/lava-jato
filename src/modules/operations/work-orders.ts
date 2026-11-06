@@ -15,6 +15,8 @@ import {
   workOrders,
 } from "@/db/schema";
 import { amountDue, getPaymentSummary, recomputeFinancialStatus } from "@/modules/finance/payments";
+import { applyConsumptionForWorkOrder } from "@/modules/inventory/inventory";
+import { earnOnDelivery, reverseRedemptionTx } from "@/modules/loyalty/loyalty";
 import { normalizePhone, normalizePlate } from "@/lib/phone";
 import { VEHICLE_CATEGORIES } from "@/modules/scheduling/booking";
 import { canTransitionWorkOrder, REQUIRES_COMPLETE_CHECKLIST, type WorkOrderStatus } from "./state-machine";
@@ -283,7 +285,14 @@ export async function changeWorkOrderStatus(
       await tx
         .insert(workOrderStatusHistory)
         .values({ workOrderId: wo.id, fromStatus: wo.status, toStatus: to, changedBy: userId, note: note ?? null });
-      if (to === "CANCELADO") await tx.update(workOrders).set({ financialStatus: "CANCELADO" }).where(eq(workOrders.id, wo.id));
+      if (to === "CANCELADO") {
+        await tx.update(workOrders).set({ financialStatus: "CANCELADO" }).where(eq(workOrders.id, wo.id));
+        await reverseRedemptionTx(tx, wo.id, userId, "OS cancelada: pontos devolvidos");
+      }
+      if (to === "ENTREGUE") {
+        await applyConsumptionForWorkOrder(tx, wo, userId);
+        await earnOnDelivery(tx, wo, userId);
+      }
       if (to === "ENTREGUE" && wo.appointmentId) {
         await tx
           .update(appointments)

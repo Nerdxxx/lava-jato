@@ -4,11 +4,33 @@
 |---|---|
 | 0 Arquitetura e docs | concluída |
 | 1 Fundação | concluída |
-| 2 Agendamento | concluída (restam pendências de ambiente e agendamento pelo balcão) |
-| 3 Operação | concluída (pendências abaixo) |
-| 4 Financeiro | concluída (pendências abaixo) |
-| 5 Estoque | próxima |
-| 6–7 | não iniciadas |
+| 2 Agendamento | concluída |
+| 3 Operação | concluída |
+| 4 Financeiro | concluída |
+| 5 Estoque | concluída |
+| 6 Cliente, fidelidade e PWA | concluída |
+| 7 Notificações, site público e produção | concluída |
+
+## Fase 7 — entregue
+- **WhatsApp** (link `wa.me`, sem API paga): mensagens padrão geradas no servidor — veículo recebido, pronto para retirada, agradecimento (OS) e confirmação/lembrete (agenda). Cada envio fica registrado em `notifications`.
+- **Dados do negócio** em Configurações (nome, WhatsApp, endereço, mapa, Instagram, chave Pix) usados no site, recibo e mensagens.
+- **Site público**: início com serviços, "como funciona", horários e localização; página **Contato**; botão flutuante do WhatsApp; robots.txt e sitemap.xml.
+- **Recibo imprimível** da OS (`/admin/os/[id]/recibo`, imprimir ou salvar PDF).
+- **Agendamento pelo balcão** (`/admin/agenda/novo`): a equipe agenda por telefone e o horário já entra confirmado.
+- **Produção**: `Dockerfile`, `docker-compose.yml` (perfil `prod` com app + Postgres), CI no GitHub Actions (lint, typecheck, testes, testes contra Postgres real, build e E2E). Guia em `docs/deploy.md`.
+- **P-01 resolvida**: `tests/postgres-concurrency.test.ts` roda contra PostgreSQL real (reservas, caixa, recebimentos, estoque e resgate simultâneos). Encontrou e corrigiu uma corrida no resgate de fidelidade (agora trava o cliente).
+
+## Fase 6 — entregue
+- **Portal do cliente** (`/cliente`): andamento da lavagem em tempo real (etapas), fotos das próprias OS, próximos agendamentos, histórico, veículos e fidelidade. `/cliente/conta`: nome, consentimento de marketing e troca de senha.
+- **Cadastro** (`/cadastro`): cliente novo cria conta; cliente já atendido só vincula o cadastro existente com o código de um agendamento dele (prova de posse). Sem o código, a equipe gera um **link de acesso** no perfil do cliente.
+- **Redefinição de senha** por link de uso único (48 h, só o hash no banco, encerra as sessões). "Esqueci minha senha" orienta a pedir o link pelo WhatsApp (não há provedor de e-mail).
+- **Fidelidade** (`/admin/fidelidade`): cada OS entregue e paga = 1 ponto; com N pontos o atendente aplica o prêmio (% do serviço, 100% = grátis) na OS. OS do resgate não pontua; cancelamento devolve os pontos; ajuste manual (admin) com motivo. Extrato append-only.
+- **PWA**: manifesto, ícones, service worker (somente rede para dados; cache só de arquivos estáticos; página offline).
+
+## Fase 5 — entregue
+- **Estoque** (`/admin/estoque`, ADMINISTRADOR): produtos com unidade e estoque mínimo; entrada, saída (com motivo, nunca negativa) e ajuste por contagem; histórico append-only com saldo após cada movimento.
+- **Consumo por serviço**: regras serviço × produto (geral ou por categoria; a específica vence). **Baixa automática na entrega da OS**, na mesma transação, idempotente (índice único item+OS). Consumo automático pode negativar o saldo, sinalizado como "Negativo — conferir".
+- Alertas de reposição na tela de estoque e no painel inicial.
 
 ## Fase 4 — entregue
 - **Pagamentos** na OS (`/admin/os/[id]`): Dinheiro, Pix, débito, crédito e Outro; **pagamento dividido** (até 3 linhas por envio, tudo-ou-nada). Soma nunca ultrapassa o saldo; a linha da OS é travada (`FOR UPDATE`) contra recebimentos simultâneos; chave de idempotência contra reenvio.
@@ -22,10 +44,9 @@
 - 19 testes novos (total 101).
 
 ## Pendências da Fase 4
-- Recibo/comprovante imprimível e conciliação de cartão/Pix (taxas das operadoras não são modeladas).
+- Conciliação de cartão/Pix (taxas das operadoras não são modeladas).
 - Despesas recorrentes e anexos de comprovante.
 - Pagamento online (Pix/cartão por gateway) — fora do escopo até haver conta no provedor.
-- Corrida real de recebimentos e abertura de caixa contra PostgreSQL (hoje só PGlite; ver `PENDENTE INSTALAÇÃO.md`).
 - Troco: o valor em dinheiro registrado é o aplicado à OS (o troco é manual).
 
 ## Fase 3 — entregue
@@ -41,19 +62,15 @@
 - 44 testes novos (total 82).
 
 ## Pendências da Fase 3
-- Arrastar e soltar na fila (opcional no prompt; hoje são botões).
+- Arrastar e soltar na fila (opcional; hoje são botões).
 - Sincronização por polling; evoluir para SSE/WebSocket se necessário.
-- Câmera: o campo usa `capture` do celular; não testado em aparelho real.
+- Câmera: o campo usa `capture` do celular; testar em aparelho real.
 - Tela de edição de checklist por serviço (modelos só via seed).
-- Estoque: baixa automática por OS é da Fase 5.
-- Fotos autorizadas no perfil do cliente (Fase 6).
 
 ## Pendências da Fase 2
-- Agendamento criado pela equipe (por telefone) no painel — hoje só atendimento sem agendamento (OS direta).
-- Concorrência real contra PostgreSQL (precisa Docker — ver `PENDENTE INSTALAÇÃO.md`).
-- E2E com Playwright: smoke em `tests/e2e/smoke.spec.ts` (páginas públicas, login, navegação do painel). Falta cobrir os fluxos completos (agendar, OS, pagamento).
-- Rate limit em memória (1 instância).
+- Rate limit em memória (1 instância). Com várias instâncias, trocar por armazenamento compartilhado.
 - Valores provisórios a confirmar: expediente seg–sáb 8–18h, duração 40/70 min, 1 vaga, preparação 10 min, passo 30 min, cancelamento até 2h antes (todos editáveis em Configurações).
 
-## Pendências da Fase 1
-Recuperação de senha, login/cadastro de cliente, CI, PWA, tema escuro.
+## Fora do escopo / evolução
+- Envio automático de WhatsApp/e-mail (exige conta na API oficial do WhatsApp Business ou provedor de e-mail). Hoje o envio é por link, conferido pela equipe.
+- Tema escuro.

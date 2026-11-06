@@ -10,6 +10,7 @@ import { formatBRL } from "@/lib/utils";
 import { getOpenCashRegister } from "@/modules/finance/payments";
 import { getFinancialSummary } from "@/modules/finance/reports";
 import { OPEN_STATUSES } from "@/modules/operations/state-machine";
+import { countLowStock } from "@/modules/inventory/inventory";
 
 export const metadata = { title: "Painel" };
 export const dynamic = "force-dynamic";
@@ -49,6 +50,7 @@ export default async function AdminHome() {
   const summary = showMoney ? await getFinancialSummary(db, today, today) : null;
   const month = showMoney ? await getFinancialSummary(db, today.slice(0, 8) + "01", today) : null;
   const cash = hasPermission(user.role, "caixa:operar") ? await getOpenCashRegister(db) : undefined;
+  const lowStock = hasPermission(user.role, "estoque:gerir") ? await countLowStock(db) : null;
 
   return (
     <div className="space-y-6">
@@ -61,6 +63,9 @@ export default async function AdminHome() {
         {summary && <Stat label="Recebido hoje" value={formatBRL(summary.receivedCents)} href="/admin/financeiro" />}
         {summary && <Stat label="OS entregues hoje" value={String(summary.deliveredCount)} />}
         {month && <Stat label="Recebido no mês" value={formatBRL(month.receivedCents)} href="/admin/financeiro" />}
+        {lowStock !== null && (
+          <Stat label="Produtos para repor" value={String(lowStock)} hint={lowStock > 0 ? "Abaixo do estoque mínimo" : "Estoque em dia"} href="/admin/estoque" />
+        )}
         {month && <Stat label="Resultado do mês" value={formatBRL(month.resultCents)} hint="Recebido − despesas" href="/admin/financeiro" />}
       </div>
     </div>

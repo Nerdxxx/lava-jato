@@ -24,6 +24,8 @@ import {
   type HoursWindow,
 } from "@/modules/scheduling/config";
 
+import { saveProfile } from "@/modules/business/profile";
+
 const BASE = "/admin/configuracoes";
 
 function str(fd: FormData, key: string): string {
@@ -159,4 +161,18 @@ export async function saveServiceAction(fd: FormData): Promise<void> {
     if (!res.ok) redirect(`${BASE}?erro=${encodeURIComponent(res.message)}`);
   }
   await finish(user.id, "config.service", serviceId, { ok: true, value: undefined }, "Serviço e preços salvos.");
+}
+
+export async function saveProfileAction(fd: FormData): Promise<void> {
+  const user = await requirePermission("configuracoes:gerir");
+  const res = await saveProfile(await getDb(), {
+    name: str(fd, "name"),
+    whatsapp: str(fd, "whatsapp"),
+    address: str(fd, "address"),
+    mapsUrl: str(fd, "mapsUrl"),
+    instagram: str(fd, "instagram"),
+    pixKey: str(fd, "pixKey"),
+  });
+  revalidatePath("/", "layout");
+  await finish(user.id, "config.profile", "business_profile", res.ok ? { ok: true, value: undefined } : res, "Dados do negócio salvos.");
 }
