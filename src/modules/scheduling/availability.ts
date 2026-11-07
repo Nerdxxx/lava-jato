@@ -53,9 +53,9 @@ export function computeSlots(input: AvailabilityInput): Slot[] {
     for (let t = opens.getTime(); ; t += stepMs) {
       const start = new Date(t);
       const finish = new Date(t + durationMinutes * 60_000);
-      if (finish > closes) break; // o serviço precisa terminar até o fechamento
-      if (start < earliest || start > latest) continue;
       const end = new Date(finish.getTime() + settings.prepMinutes * 60_000);
+      if (end > closes) break; // atendimento e preparação precisam caber no expediente
+      if (start < earliest || start > latest) continue;
 
       const free = resourceIds.filter(
         (rid) =>

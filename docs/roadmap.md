@@ -10,6 +10,20 @@
 | 5 Estoque | concluída |
 | 6 Cliente, fidelidade e PWA | concluída |
 | 7 Notificações, site público e produção | concluída |
+| 8 Redesign do site público e adicionais | concluída |
+
+## Fase 8 — entregue (redesign)
+- **Site público redesenhado** (`src/components/site/*`): cabeçalho fixo com menu lateral no celular (foco preso, Esc fecha), hero azul-marinho com a logo oficial, vantagens, cards de serviço com preço/duração do banco (moto em card próprio), seção de adicionais, tabela de preços (tabela no computador, cards no celular), "Como funciona" em 4 etapas, espaço de fotos reais (estado vazio até haver fotos), horários com **aberto agora** (fuso de Maceió e feriados), localização/contato e rodapé completo. Barra inferior de agendamento no celular.
+- **Páginas novas**: `/privacidade` e `/termos`. Metadados de SEO local, imagem de compartilhamento `public/og.png` (`scripts/og-image.ts`) e dados estruturados `AutoWash`.
+- **Adicionais** (cera R$ 20, chuva ácida nos vidros R$ 40): editáveis em Configurações → Serviços adicionais; etapa própria no agendamento; total somado **no servidor** e gravado como snapshot no agendamento e na OS (migration `0006_addons`). Aparecem na agenda, na OS e no recibo.
+- **Agendamento**: barra de progresso, cards de seleção, resumo com total, carregamento em esqueleto, link com veículo/serviço pré-selecionados (`/agendar?categoria=...&servico=...`).
+- **Preços**: moto externa passou a R$ 30. `scripts/precos.ts` compara o banco com a tabela de referência e só grava com `--aplicar` (fica na auditoria). Descrição curta do serviço agora é editável no painel.
+- **Continuidade UX e agenda**: prévia compacta de preços logo após o hero; inclusos recolhidos; duração por serviço/categoria e por adicional editável no painel; duração total validada na disponibilidade e na reserva; duração do adicional preservada no snapshot; horários até o fechamento consideram todo o bloco reservado; itens de lavagem de moto são descritos separadamente.
+
+## Pendências da Fase 8
+- Galeria: sem cadastro de fotos pelo painel ainda; o componente `GallerySection` já aceita a lista de fotos.
+- Mapa incorporado: não exibido porque não há coordenadas confirmadas; o botão "Como chegar" usa o link do Google Maps cadastrado.
+- Os tempos atuais do banco continuam 40 min (externa) e 70 min (completa) em todas as categorias. A auditoria confirmou os preços, mas encontrou 9 tempos diferentes dos valores de referência; revise a operação antes de aplicar `--aplicar-duracoes`.
 
 ## Fase 7 — entregue
 - **WhatsApp** (link `wa.me`, sem API paga): mensagens padrão geradas no servidor — veículo recebido, pronto para retirada, agradecimento (OS) e confirmação/lembrete (agenda). Cada envio fica registrado em `notifications`.

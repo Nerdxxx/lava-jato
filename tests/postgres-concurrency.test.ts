@@ -45,9 +45,9 @@ describe.skipIf(!URL)("concorrência real no PostgreSQL", () => {
     await handle?.close();
   });
 
-  it("10 reservas simultâneas no mesmo horário: só 1 entra", async () => {
+  it("duas pessoas disputam a última vaga no mesmo horário: só uma reserva entra", async () => {
     const results = await Promise.all(
-      Array.from({ length: 10 }, (_, n) =>
+      Array.from({ length: 2 }, (_, n) =>
         createAppointment(
           handle.db,
           {

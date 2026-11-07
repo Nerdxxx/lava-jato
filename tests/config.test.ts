@@ -203,4 +203,13 @@ describe("serviços e preços", () => {
     expect((await updateService(db, svc.id, { durationMinutes: 1, active: true })).ok).toBe(false);
     expect((await updateService(db, "00000000-0000-0000-0000-000000000000", { durationMinutes: 30, active: true })).ok).toBe(false);
   });
+  it("salva duração por categoria e rejeita zero ou duração negativa", async () => {
+    const { db, svc } = await setup();
+    const base = { serviceId: svc.id, category: "CARRO_PEQUENO", priceCents: 4000 };
+    expect((await setPrice(db, { ...base, durationMinutes: 0 })).ok).toBe(false);
+    expect((await setPrice(db, { ...base, durationMinutes: -5 })).ok).toBe(false);
+    expect((await setPrice(db, { ...base, durationMinutes: 50 })).ok).toBe(true);
+    const [row] = await db.select().from(servicePrices).where(eq(servicePrices.serviceId, svc.id));
+    expect(row?.durationMinutesOverride).toBe(50);
+  });
 });

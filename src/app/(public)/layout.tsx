@@ -1,52 +1,67 @@
-import Link from "next/link";
 import { getDb } from "@/db/client";
-import { Brand } from "@/components/layout/brand";
-import { buttonVariants } from "@/components/ui/button";
-import { formatPhoneBR, loadProfile } from "@/modules/business/profile";
+import { WhatsAppIcon } from "@/components/site/brand-icons";
+import { MobileCtaBar } from "@/components/site/mobile-cta-bar";
+import { SiteFooter } from "@/components/site/site-footer";
+import { SiteHeader, type SiteNavItem } from "@/components/site/site-header";
+import { getOpeningHours } from "@/modules/business/hours";
+import { loadProfile } from "@/modules/business/profile";
 import { waLink } from "@/modules/notifications/whatsapp";
+import { loadAddons } from "@/modules/scheduling/addons";
+import { getCatalog } from "@/modules/scheduling/catalog";
 
-const NAV = [
+const NAV: SiteNavItem[] = [
+  { href: "/#servicos", label: "Serviços" },
   { href: "/precos", label: "Preços" },
+  { href: "/#como-funciona", label: "Como funciona" },
   { href: "/agendamento", label: "Meu agendamento" },
   { href: "/contato", label: "Contato" },
-  { href: "/entrar", label: "Entrar" },
+];
+
+const QUICK_LINKS: SiteNavItem[] = [
+  { href: "/", label: "Início" },
+  { href: "/precos", label: "Tabela de preços" },
+  { href: "/agendar", label: "Agendar lavagem" },
+  { href: "/agendamento", label: "Consultar agendamento" },
+  { href: "/cliente", label: "Minha conta" },
+  { href: "/contato", label: "Contato" },
 ];
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const profile = await loadProfile(await getDb());
+  const db = await getDb();
+  const [profile, hours, catalog, addons] = await Promise.all([loadProfile(db), getOpeningHours(db), getCatalog(db), loadAddons(db)]);
+  const footerServices = [
+    ...(catalog.some((s) => typeof s.prices.MOTO === "number") ? [{ name: "Lavagem de motos" }] : []),
+    ...catalog.filter((s) => Object.entries(s.prices).some(([c]) => c !== "MOTO")).map((s) => ({ name: s.name })),
+    ...addons.filter((a) => a.active && a.categories.length > 0).map((a) => ({ name: a.name })),
+  ];
+  const whatsappHref = profile.whatsapp ? waLink(profile.whatsapp, "Olá! Vim pelo site do lava jato.") : null;
+
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="bg-navy-950 text-white">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
-          <Brand light />
-          <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium" aria-label="Principal">
-            {NAV.map((i) => (
-              <Link key={i.href} href={i.href} className="hover:text-aqua-400">
-                {i.label}
-              </Link>
-            ))}
-            <Link href="/agendar" className={buttonVariants({ className: "min-h-9 px-4" })}>
-              Agendar
-            </Link>
-          </nav>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
-      <footer className="space-y-1 bg-navy-950 py-6 text-center text-sm text-white/70">
-        <p>
-          {profile.name} · {profile.address}
-        </p>
-        {profile.whatsapp && <p>WhatsApp {formatPhoneBR(profile.whatsapp)}</p>}
-      </footer>
-      {profile.whatsapp && (
+      <a
+        href="#conteudo"
+        className="sr-only z-50 rounded-lg bg-sun-400 px-4 py-2 font-semibold text-navy-950 focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Pular para o conteúdo
+      </a>
+      <SiteHeader nav={NAV} />
+      <main id="conteudo" className="flex-1">
+        {children}
+      </main>
+      <SiteFooter profile={profile} hours={hours} services={footerServices} quickLinks={QUICK_LINKS} whatsappHref={whatsappHref} />
+      {/* espaço da barra inferior de agendamento no celular, para ela nunca cobrir o rodapé */}
+      <div aria-hidden className="h-20 bg-navy-950 lg:hidden" />
+      <MobileCtaBar whatsappHref={whatsappHref} />
+      {whatsappHref && (
         <a
-          href={waLink(profile.whatsapp, "Olá! Vim pelo site do lava jato.")}
+          href={whatsappHref}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Falar no WhatsApp"
-          className="fixed bottom-4 right-4 flex size-14 items-center justify-center rounded-full bg-[#25D366] text-2xl text-white shadow-lg hover:opacity-90"
+          data-print-hide
+          className="fixed bottom-6 right-6 z-30 hidden size-14 items-center justify-center rounded-full bg-whatsapp text-white shadow-lg shadow-navy-950/25 transition hover:scale-105 lg:flex"
         >
-          <span aria-hidden>💬</span>
+          <WhatsAppIcon className="size-7" />
         </a>
       )}
     </div>

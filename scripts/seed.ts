@@ -20,7 +20,9 @@ const CATALOG = [
   {
     slug: "lavagem-externa",
     name: "Lavagem externa",
+    description: "Limpeza da parte de fora do veículo, com rodas, pneus e vidros.",
     durationMinutes: 40,
+    durations: { MOTO: 30, CARRO_PEQUENO: 50, CARRO_MEDIO: 60, SUV: 70, PICAPE: 80 } as Partial<Record<Cat, number>>,
     displayOrder: 1,
     includes: [
       "Pré-lavagem quando necessária",
@@ -32,12 +34,14 @@ const CATALOG = [
       "Secagem com microfibra",
     ],
     excludes: [],
-    prices: { MOTO: 2000, CARRO_PEQUENO: 4000, CARRO_MEDIO: 4000, SUV: 6000, PICAPE: 6000 } as Partial<Record<Cat, number>>,
+    prices: { MOTO: 3000, CARRO_PEQUENO: 4000, CARRO_MEDIO: 4000, SUV: 6000, PICAPE: 6000 } as Partial<Record<Cat, number>>,
   },
   {
     slug: "lavagem-completa",
     name: "Lavagem completa",
+    description: "Lavagem externa mais limpeza interna básica: aspiração, painel, portas e vidros.",
     durationMinutes: 70,
+    durations: { CARRO_PEQUENO: 90, CARRO_MEDIO: 100, SUV: 120, PICAPE: 130 } as Partial<Record<Cat, number>>,
     displayOrder: 2,
     includes: [
       "Todos os itens da lavagem externa",
@@ -67,12 +71,12 @@ const CHECKLISTS: Record<string, string[]> = {
 };
 
 for (const s of CATALOG) {
-  const { prices, ...data } = s;
+  const { prices, durations, ...data } = s;
   let [row] = await db.select().from(services).where(eq(services.slug, s.slug)).limit(1);
   if (!row) {
     [row] = await db.insert(services).values(data).returning();
     for (const [category, priceCents] of Object.entries(prices)) {
-      await db.insert(servicePrices).values({ serviceId: row!.id, category: category as Cat, priceCents });
+      await db.insert(servicePrices).values({ serviceId: row!.id, category: category as Cat, priceCents, durationMinutesOverride: durations[category as Cat] ?? null });
     }
   }
   const hasTemplate = await db

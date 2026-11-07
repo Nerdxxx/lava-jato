@@ -96,7 +96,10 @@ export default async function WorkOrderPage({
       <Card className="space-y-2 text-sm">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
           <dt className="text-muted">Serviço</dt>
-          <dd>{wo.serviceName}</dd>
+          <dd>
+            {wo.serviceName}
+            {wo.addons.length > 0 && <span className="block text-xs text-muted">+ {wo.addons.map((x) => x.name).join(", ")}</span>}
+          </dd>
           <dt className="text-muted">Veículo</dt>
           <dd>
             {CATEGORY_LABEL[wo.category]} — {wo.vehicleModel}

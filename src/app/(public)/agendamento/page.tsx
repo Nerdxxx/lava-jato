@@ -1,13 +1,14 @@
+import { PageShell } from "@/components/site/section";
 import { LookupClient } from "./lookup";
 
 export const metadata = { title: "Consultar agendamento" };
+// O layout público lê horários e contato do banco: nada de página congelada no build.
+export const dynamic = "force-dynamic";
 
 export default function LookupPage() {
   return (
-    <div className="mx-auto max-w-lg space-y-6">
-      <h1 className="text-2xl font-extrabold text-navy-950">Consultar agendamento</h1>
-      <p className="text-sm text-muted">Informe o código recebido e o WhatsApp usado no agendamento.</p>
+    <PageShell narrow eyebrow="Meu agendamento" title="Consultar agendamento" description="Informe o código recebido e o WhatsApp usado no agendamento para ver, reagendar ou cancelar.">
       <LookupClient />
-    </div>
+    </PageShell>
   );
 }

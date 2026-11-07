@@ -1,0 +1,1 @@
+ALTER TABLE "service_prices" ADD CONSTRAINT "service_prices_duration_pos" CHECK ("service_prices"."duration_minutes_override" IS NULL OR "service_prices"."duration_minutes_override" > 0);

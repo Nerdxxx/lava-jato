@@ -57,6 +57,7 @@ export const servicePrices = pgTable(
   (t) => [
     uniqueIndex("service_prices_service_category_uq").on(t.serviceId, t.category),
     check("service_prices_nonneg", sql`${t.priceCents} >= 0`),
+    check("service_prices_duration_pos", sql`${t.durationMinutesOverride} IS NULL OR ${t.durationMinutesOverride} > 0`),
   ],
 );
 
@@ -126,6 +127,8 @@ export const appointments = pgTable(
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
     priceCents: integer("price_cents").notNull(),
+    /** Adicionais contratados (snapshot: nome, preço e tempo na hora do agendamento). priceCents já inclui a soma. */
+    addons: jsonb("addons").$type<{ slug: string; name: string; priceCents: number; durationMinutes?: number }[]>().notNull().default([]),
     status: appointmentStatusEnum("status").notNull().default("PENDENTE"),
     notes: text("notes"),
     rescheduledFromId: uuid("rescheduled_from_id"),

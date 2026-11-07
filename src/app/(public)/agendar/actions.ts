@@ -32,6 +32,7 @@ export async function createBookingAction(_prev: BookingState, formData: FormDat
     vehicleModel: get("vehicleModel") ?? "",
     plate: get("plate"),
     notes: get("notes"),
+    addons: formData.getAll("addons").filter((v): v is string => typeof v === "string" && v !== ""),
   });
   if (!result.ok) return { error: result.message };
 

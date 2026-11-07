@@ -19,6 +19,7 @@ export interface AppointmentView {
   startsAt: string;
   startsAtLabel: string;
   priceCents: number;
+  addons: { slug: string; name: string; priceCents: number; durationMinutes?: number }[];
   canChange: boolean;
   minDate: string;
   maxDate: string;
@@ -54,6 +55,7 @@ async function toView(appt: AppointmentRow): Promise<AppointmentView> {
       timeStyle: "short",
     }).format(appt.startsAt),
     priceCents: appt.priceCents,
+    addons: appt.addons,
     canChange: appt.status === "PENDENTE" || appt.status === "CONFIRMADO",
     minDate: today,
     maxDate: addDays(today, settings.maxAdvanceDays),

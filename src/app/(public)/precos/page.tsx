@@ -1,63 +1,48 @@
-import { asc, eq } from "drizzle-orm";
+import Link from "next/link";
 import { getDb } from "@/db/client";
-import { servicePrices, services } from "@/db/schema";
-import { Card, EmptyState } from "@/components/ui/card";
-import { formatBRL } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/card";
+import { PriceTable } from "@/components/site/price-table";
+import { PageShell } from "@/components/site/section";
+import { loadAddons } from "@/modules/scheduling/addons";
+import { getCatalog } from "@/modules/scheduling/catalog";
 
-export const metadata = { title: "Preços" };
-export const dynamic = "force-dynamic";
-
-const CATEGORY_LABEL: Record<string, string> = {
-  MOTO: "Moto",
-  CARRO_PEQUENO: "Carro pequeno",
-  CARRO_MEDIO: "Carro médio",
-  SUV: "SUV / Utilitário",
-  PICAPE: "Picape",
+export const metadata = {
+  title: "Tabela de preços",
+  description: "Preços da lavagem externa, lavagem completa e lavagem de motos no Lava Jato Capuã, em Barra dos Coqueiros — SE.",
 };
-const CATEGORY_ORDER = Object.keys(CATEGORY_LABEL);
+export const dynamic = "force-dynamic";
 
 export default async function PricesPage() {
   const db = await getDb();
-  const svcs = await db.select().from(services).where(eq(services.active, true)).orderBy(asc(services.displayOrder));
-  const prices = await db.select().from(servicePrices).where(eq(servicePrices.active, true));
-
-  if (svcs.length === 0) {
-    return <EmptyState title="Tabela de preços ainda não cadastrada" description="Cadastre os serviços no painel administrativo." />;
-  }
+  const [catalog, addons] = await Promise.all([getCatalog(db), loadAddons(db)]);
+  const active = addons.filter((a) => a.active && a.categories.length > 0);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-extrabold text-navy-950">Tabela de preços</h1>
-      <Card className="overflow-x-auto p-0">
-        <table className="w-full min-w-[420px] text-left text-sm">
-          <thead className="bg-navy-950 text-white">
-            <tr>
-              <th className="p-3">Veículo</th>
-              {svcs.map((s) => (
-                <th key={s.id} className="p-3">
-                  {s.name}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {CATEGORY_ORDER.map((cat) => (
-              <tr key={cat} className="border-t border-line">
-                <th className="p-3 font-semibold">{CATEGORY_LABEL[cat]}</th>
-                {svcs.map((s) => {
-                  const p = prices.find((x) => x.serviceId === s.id && x.category === cat);
-                  return (
-                    <td key={s.id} className="p-3 font-semibold">
-                      {p ? formatBRL(p.priceCents) : <span className="font-normal text-muted">Indisponível</span>}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
-      <p className="text-sm text-muted">A lavagem completa inclui limpeza interna básica. Não inclui higienização profunda.</p>
-    </div>
+    <PageShell eyebrow="Preços" title="Tabela de preços" description="Valores por tipo de veículo, pagos no local no dia do atendimento.">
+      {catalog.length === 0 ? (
+        <EmptyState title="Tabela de preços ainda não cadastrada" description="Os serviços aparecerão aqui assim que forem cadastrados." />
+      ) : (
+        <div className="space-y-6">
+          <PriceTable catalog={catalog} addons={active} />
+          {catalog.some((s) => s.excludes.length > 0) && (
+            <ul className="space-y-1 text-sm text-muted">
+              {catalog
+                .filter((s) => s.excludes.length > 0)
+                .map((s) => (
+                  <li key={s.id}>
+                    {s.name}: não inclui {s.excludes.join(", ").toLowerCase()}.
+                  </li>
+                ))}
+            </ul>
+          )}
+          <Link
+            href="/agendar"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-sun-400 px-6 text-sm font-bold text-navy-950 hover:bg-sun-500"
+          >
+            Agendar minha lavagem
+          </Link>
+        </div>
+      )}
+    </PageShell>
   );
 }

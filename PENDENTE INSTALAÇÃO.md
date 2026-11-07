@@ -25,6 +25,13 @@ winget install -e --id Docker.DockerDesktop
 
 ## 4. Navegador do Playwright (testes E2E) — CONCLUÍDO (2026-11-05)
 
+## 5. Banco de produção após atualizar (nov/2026)
+Depois do `git pull` no servidor, as migrations sobem sozinhas. Para conferir a tabela de preços (moto R$ 30):
+```
+docker compose --profile prod exec app npx tsx scripts/precos.ts            # só mostra diferenças
+docker compose --profile prod exec app npx tsx scripts/precos.ts --aplicar  # grava
+```
+
 ## Verificado neste computador
 | Item | Situação |
 |---|---|

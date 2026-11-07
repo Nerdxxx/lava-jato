@@ -1,7 +1,8 @@
 # Regras de negócio
 
 ## Agendamento
-- Duração do bloco = duração do serviço + tempo de preparação (configurável).
+- Duração do bloco = duração do serviço para a categoria + duração dos adicionais contratados + intervalo operacional (configurável).
+- Durações propostas por veículo são parâmetros de referência; a configuração ativa é a cadastrada no banco e pode ser auditada separadamente antes de qualquer atualização.
 - Slot válido: dentro do expediente do dia, fora de pausas/feriados/bloqueios, respeitando antecedência mínima/máxima, e com recurso (vaga) livre.
 - Slots são gerados em intervalos configuráveis (`slot_step_minutes`).
 - Reserva ocorre em transação; a constraint de exclusão rejeita a segunda reserva simultânea.
@@ -18,7 +19,12 @@ CONVERTIDO_EM_OS -> CONCLUIDO
 Status que ocupam vaga: PENDENTE, CONFIRMADO, CONVERTIDO_EM_OS.
 
 ## Catálogo
-Tabela inicial (editável, em centavos): Moto externa 2000; Pequeno 4000/6000; Médio 4000/7000; SUV 6000/9000; Picape 6000/10000. Moto não tem lavagem completa. Serviços não anunciados (polimento, vitrificação etc.) não são cadastrados.
+Tabela de referência (editável, em centavos): Moto externa 3000; Pequeno 4000/6000; Médio 4000/7000; SUV 6000/9000; Picape 6000/10000. Moto não tem lavagem completa. O site mostra a moto em card próprio; o "a partir de" dos serviços de carro ignora o preço da moto.
+
+### Adicionais
+- Cera R$ 20 e remoção de manchas de chuva ácida dos vidros R$ 40 (padrão: ativos, só para carros); preço e duração ficam em `business_settings.addons` e são congelados na reserva.
+- O cliente envia só os identificadores; o servidor recusa adicional inexistente, inativo ou de outra categoria e soma o preço vigente. Preço do agendamento = serviço + adicionais, congelado (reagendar e check-in preservam).
+- Não há promessa de remoção total de manchas. Serviços não anunciados (polimento, vitrificação etc.) não são cadastrados.
 
 ## Financeiro (Fase 4)
 - Valor a cobrar = preço contratado (snapshot) − desconto autorizado. Valores em centavos.

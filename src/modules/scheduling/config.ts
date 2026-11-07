@@ -165,14 +165,18 @@ export function parseMoneyToCents(input: string): number | null {
 export async function updateService(
   db: Database,
   serviceId: string,
-  input: { durationMinutes: number; active: boolean },
+  input: { durationMinutes: number; active: boolean; description?: string },
 ): Promise<ConfigResult> {
   if (!Number.isInteger(input.durationMinutes) || input.durationMinutes < 5 || input.durationMinutes > 600) {
     return bad("Duração deve estar entre 5 e 600 minutos.");
   }
   const updated = await db
     .update(services)
-    .set({ durationMinutes: input.durationMinutes, active: input.active })
+    .set({
+      durationMinutes: input.durationMinutes,
+      active: input.active,
+      ...(input.description !== undefined ? { description: input.description.trim().slice(0, 240) || null } : {}),
+    })
     .where(eq(services.id, serviceId))
     .returning({ id: services.id });
   return updated.length ? { ok: true, value: undefined } : bad("Serviço não encontrado.");
@@ -190,9 +194,13 @@ export async function setPrice(
     priceCents: number | null;
     promoPriceCents?: number | null;
     promoUntil?: Date | null;
+    durationMinutes?: number | null;
   },
 ): Promise<ConfigResult> {
   if (!(VEHICLE_CATEGORIES as readonly string[]).includes(input.category)) return bad("Categoria inválida.");
+  if (input.durationMinutes !== undefined && input.durationMinutes !== null && (!Number.isInteger(input.durationMinutes) || input.durationMinutes < 5 || input.durationMinutes > 600)) {
+    return bad("Duração por veículo deve estar entre 5 e 600 minutos.");
+  }
   const category = input.category as (typeof VEHICLE_CATEGORIES)[number];
   const svc = await db.select({ id: services.id }).from(services).where(eq(services.id, input.serviceId)).limit(1);
   if (!svc.length) return bad("Serviço não encontrado.");
@@ -213,9 +221,10 @@ export async function setPrice(
     promoPriceCents: promo,
     promoUntil: promo === null ? null : promoUntil,
     active: true,
+    ...(input.durationMinutes !== undefined ? { durationMinutesOverride: input.durationMinutes } : {}),
   };
   const existing = await db.select({ id: servicePrices.id }).from(servicePrices).where(where).limit(1);
   if (existing.length) await db.update(servicePrices).set(values).where(where);
-  else await db.insert(servicePrices).values({ serviceId: input.serviceId, category, ...values });
+  else await db.insert(servicePrices).values({ serviceId: input.serviceId, category, ...values, durationMinutesOverride: input.durationMinutes ?? null });
   return { ok: true, value: undefined };
 }

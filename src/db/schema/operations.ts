@@ -4,6 +4,7 @@ import {
   check,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -70,6 +71,8 @@ export const workOrders = pgTable(
     /** Preço contratado (snapshot) e desconto autorizado, em centavos. */
     priceCents: integer("price_cents").notNull(),
     discountCents: integer("discount_cents").notNull().default(0),
+      /** Adicionais contratados (snapshot). priceCents já inclui a soma. */
+      addons: jsonb("addons").$type<{ slug: string; name: string; priceCents: number; durationMinutes?: number }[]>().notNull().default([]),
     assignedTo: uuid("assigned_to").references(() => users.id),
     status: workOrderStatusEnum("status").notNull().default("RECEBIDO"),
     /** Derivado dos pagamentos; atualizado na mesma transação de cada pagamento/estorno. */

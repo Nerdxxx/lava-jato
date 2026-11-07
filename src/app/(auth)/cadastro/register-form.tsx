@@ -43,7 +43,13 @@ export function RegisterForm() {
       </details>
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="terms" required className="mt-1" />
-        <span>Concordo com o uso dos meus dados para agendamentos e atendimento.</span>
+        <span>
+          Concordo com o uso dos meus dados para agendamentos e atendimento (
+          <a href="/privacidade" target="_blank" className="underline">
+            política de privacidade
+          </a>
+          ).
+        </span>
       </label>
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="marketing" className="mt-1" />

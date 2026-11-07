@@ -25,6 +25,7 @@ import {
 } from "@/modules/scheduling/config";
 
 import { saveProfile } from "@/modules/business/profile";
+import { saveAddon } from "@/modules/scheduling/addons";
 
 const BASE = "/admin/configuracoes";
 
@@ -133,6 +134,7 @@ export async function saveServiceAction(fd: FormData): Promise<void> {
   const svc = await updateService(db, serviceId, {
     durationMinutes: Number(str(fd, "durationMinutes")),
     active: fd.get("active") === "on",
+    description: fd.has("description") ? str(fd, "description") : undefined,
   });
   if (!svc.ok) redirect(`${BASE}?erro=${encodeURIComponent(svc.message)}`);
 
@@ -157,10 +159,28 @@ export async function saveServiceAction(fd: FormData): Promise<void> {
       priceCents,
       promoPriceCents,
       promoUntil: rawUntil ? localToUtc(rawUntil, "23:59") : null,
+      durationMinutes: str(fd, `duration_${category}`) === "" ? null : Number(str(fd, `duration_${category}`)),
     });
     if (!res.ok) redirect(`${BASE}?erro=${encodeURIComponent(res.message)}`);
   }
   await finish(user.id, "config.service", serviceId, { ok: true, value: undefined }, "Serviço e preços salvos.");
+}
+
+export async function saveAddonAction(fd: FormData): Promise<void> {
+  const user = await requirePermission("configuracoes:gerir");
+  const priceCents = parseMoneyToCents(str(fd, "price"));
+  if (priceCents === null) redirect(`${BASE}?erro=${encodeURIComponent("Preço do adicional inválido.")}`);
+  const res = await saveAddon(await getDb(), {
+    slug: str(fd, "slug"),
+    name: str(fd, "name"),
+    description: str(fd, "description"),
+    priceCents,
+    durationMinutes: Number(str(fd, "durationMinutes")),
+    active: fd.get("active") === "on",
+    categories: fd.getAll("categories").filter((v): v is string => typeof v === "string"),
+  });
+  revalidatePath("/", "layout");
+  await finish(user.id, "config.addon", str(fd, "slug"), res.ok ? { ok: true, value: undefined } : res, "Adicional salvo.");
 }
 
 export async function saveProfileAction(fd: FormData): Promise<void> {

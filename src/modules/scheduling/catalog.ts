@@ -7,24 +7,43 @@ export interface CatalogService {
   name: string;
   description: string | null;
   includes: string[];
+  includesByCategory: Partial<Record<string, string[]>>;
   excludes: string[];
   durationMinutes: number;
+  /** Duração efetiva do serviço por categoria, incluindo ajustes salvos no catálogo. */
+  durations: Partial<Record<string, number>>;
   /** Preço em centavos por categoria; categoria ausente = indisponível. */
   prices: Partial<Record<string, number>>;
 }
+
+export const MOTO_WASH_ITEMS = [
+  "Pré-lavagem quando necessária",
+  "Lavagem das superfícies externas",
+  "Limpeza de rodas e pneus",
+  "Limpeza cuidadosa das áreas acessíveis",
+  "Enxágue",
+  "Secagem",
+];
 
 /** Serviços ativos com preço por categoria. Fonte única para o site e o agendamento. */
 export async function getCatalog(db: Database): Promise<CatalogService[]> {
   const svcs = await db.select().from(services).where(eq(services.active, true)).orderBy(asc(services.displayOrder));
   const prices = await db.select().from(servicePrices).where(eq(servicePrices.active, true));
+  const now = new Date();
   return svcs.map((s) => ({
     id: s.id,
     name: s.name,
     description: s.description,
     includes: s.includes,
+    includesByCategory: prices.some((p) => p.serviceId === s.id && p.category === "MOTO") ? { MOTO: MOTO_WASH_ITEMS } : {},
     excludes: s.excludes,
     durationMinutes: s.durationMinutes,
-    prices: Object.fromEntries(prices.filter((p) => p.serviceId === s.id).map((p) => [p.category, p.priceCents])),
+    durations: Object.fromEntries(prices.filter((p) => p.serviceId === s.id).map((p) => [p.category, p.durationMinutesOverride ?? s.durationMinutes])),
+    prices: Object.fromEntries(
+      prices
+        .filter((p) => p.serviceId === s.id)
+        .map((p) => [p.category, p.promoPriceCents !== null && p.promoUntil !== null && p.promoUntil > now ? p.promoPriceCents : p.priceCents]),
+    ),
   }));
 }
 

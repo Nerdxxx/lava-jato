@@ -94,7 +94,8 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
                   <Badge tone={STATUS_TONE[a.status]}>{STATUS_LABEL[a.status]}</Badge>
                 </div>
                 <p className="text-sm">
-                  <span className="font-semibold">{serviceName}</span> · {CATEGORY_LABEL[a.category]} — {a.vehicleModel}
+                  <span className="font-semibold">{serviceName}</span>
+                  {a.addons.length > 0 && <span className="text-muted"> + {a.addons.map((x) => x.name).join(", ")}</span>} · {CATEGORY_LABEL[a.category]} — {a.vehicleModel}
                   {a.vehiclePlate ? ` (${a.vehiclePlate})` : ""} · {formatBRL(a.priceCents)}
                 </p>
                 <p className="text-sm text-muted">

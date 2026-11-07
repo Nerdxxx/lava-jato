@@ -90,6 +90,9 @@ export function LookupClient() {
               <SlotPicker
                 serviceId={appt.serviceId}
                 category={appt.category}
+                addonSlugs={appt.addons.map((a) => a.slug)}
+                excludeCode={appt.code}
+                phone={phone}
                 minDate={appt.minDate}
                 maxDate={appt.maxDate}
                 value={newSlot}

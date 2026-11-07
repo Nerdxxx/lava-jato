@@ -79,8 +79,14 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           <tbody>
             <tr>
               <td>{wo.serviceName}</td>
-              <td className="text-right">{formatBRL(wo.priceCents)}</td>
+              <td className="text-right">{formatBRL(wo.priceCents - wo.addons.reduce((s, x) => s + x.priceCents, 0))}</td>
             </tr>
+            {wo.addons.map((x) => (
+              <tr key={x.slug}>
+                <td>+ {x.name}</td>
+                <td className="text-right">{formatBRL(x.priceCents)}</td>
+              </tr>
+            ))}
             {wo.discountCents > 0 && (
               <tr>
                 <td>Desconto</td>

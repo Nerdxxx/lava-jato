@@ -90,6 +90,7 @@ async function insertWorkOrder(
     vehicleModel: string;
     vehiclePlate: string | null;
     priceCents: number;
+    addons?: { slug: string; name: string; priceCents: number }[];
     notes: string | null;
     userId: string;
   },
@@ -112,6 +113,7 @@ async function insertWorkOrder(
       vehicleModel: data.vehicleModel,
       vehiclePlate: data.vehiclePlate,
       priceCents: data.priceCents,
+      addons: data.addons ?? [],
       notes: data.notes,
       status: "RECEBIDO",
       financialStatus: data.priceCents === 0 ? "PAGO" : "PENDENTE",
@@ -166,7 +168,8 @@ export async function checkInAppointment(db: Database, appointmentId: string, us
         category: appt.category,
         vehicleModel: appt.vehicleModel,
         vehiclePlate: appt.vehiclePlate,
-        priceCents: appt.priceCents, // preço contratado no agendamento
+        priceCents: appt.priceCents, // preço contratado no agendamento (já inclui adicionais)
+        addons: appt.addons,
         notes: appt.notes,
         userId,
       });

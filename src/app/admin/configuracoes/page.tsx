@@ -9,6 +9,7 @@ import { formatDateTimeBR, localDateOf } from "@/lib/time";
 import { CATEGORY_LABEL, CATEGORY_ORDER } from "@/modules/scheduling/labels";
 import { loadSettings } from "@/modules/scheduling/settings";
 import { loadProfile } from "@/modules/business/profile";
+import { loadAddons } from "@/modules/scheduling/addons";
 import {
   addBlockAction,
   addHolidayAction,
@@ -16,6 +17,7 @@ import {
   removeBlockAction,
   removeHolidayAction,
   saveHoursAction,
+  saveAddonAction,
   saveServiceAction,
   saveSettingsAction,
   saveProfileAction,
@@ -51,7 +53,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const db = await getDb();
   const today = localDateOf(new Date());
 
-  const profile = await loadProfile(db);
+  const [profile, addons] = await Promise.all([loadProfile(db), loadAddons(db)]);
   const [settings, hours, resourceRows, holidayRows, blockRows, serviceRows, priceRows] = await Promise.all([
     loadSettings(db),
     db.select().from(operatingHours).orderBy(asc(operatingHours.opensAt)),
@@ -250,7 +252,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
       <Section
         title="Serviços e preços"
-        hint="Preço em branco = serviço indisponível para a categoria. Alterações valem só para novos agendamentos."
+        hint="Preço em branco = serviço indisponível para a categoria. Duração pode ser ajustada por veículo. Alterações valem só para novos agendamentos."
       >
         <div className="space-y-6">
           {serviceRows.map((s) => (
@@ -258,19 +260,21 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               <input type="hidden" name="serviceId" value={s.id} />
               <div className="flex flex-wrap items-end gap-3">
                 <p className="text-base font-bold">{s.name}</p>
-                <Field label="Duração (min)" htmlFor={`dur-${s.id}`}>
-                  <SmallInput id={`dur-${s.id}`} name="durationMinutes" type="number" min={5} defaultValue={s.durationMinutes} className="w-28" required />
-                </Field>
+                <input type="hidden" name="durationMinutes" value={s.durationMinutes} />
                 <label className="flex items-center gap-2 pb-2 text-sm">
                   <input type="checkbox" name="active" defaultChecked={s.active} className="size-5" /> Ativo no site
                 </label>
               </div>
+              <Field label="Descrição curta (aparece no site)" htmlFor={`desc-${s.id}`}>
+                <SmallInput id={`desc-${s.id}`} name="description" defaultValue={s.description ?? ""} maxLength={240} />
+              </Field>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[520px] text-left text-sm">
                   <thead className="text-xs text-muted">
                     <tr>
                       <th className="py-1 pr-2">Veículo</th>
                       <th className="px-1">Preço (R$)</th>
+                      <th className="px-1">Duração (min)</th>
                       <th className="px-1">Promoção (R$)</th>
                       <th className="px-1">Promoção até</th>
                     </tr>
@@ -285,6 +289,9 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                             <SmallInput aria-label={`${s.name} ${CATEGORY_LABEL[c]} preço`} name={`price_${c}`} inputMode="decimal" defaultValue={centsToInput(p?.priceCents)} className="w-28" />
                           </td>
                           <td className="px-1 py-1">
+                            <SmallInput aria-label={`${s.name} ${CATEGORY_LABEL[c]} duração`} name={`duration_${c}`} type="number" min={5} max={600} defaultValue={p?.durationMinutesOverride ?? s.durationMinutes} className="w-24" required />
+                          </td>
+                          <td className="px-1 py-1">
                             <SmallInput aria-label={`${s.name} ${CATEGORY_LABEL[c]} promoção`} name={`promo_${c}`} inputMode="decimal" defaultValue={centsToInput(p?.promoPriceCents)} className="w-28" />
                           </td>
                           <td className="px-1 py-1">
@@ -297,6 +304,46 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                 </table>
               </div>
               <Button type="submit">Salvar {s.name}</Button>
+            </form>
+          ))}
+        </div>
+      </Section>
+
+      <Section
+        title="Serviços adicionais"
+        hint="Aparecem no site e podem ser escolhidos no agendamento quando ativos. Preço e duração são somados no servidor e valem só para novos agendamentos."
+      >
+        <div className="space-y-6">
+          {addons.map((a) => (
+            <form key={a.slug} action={saveAddonAction} className="space-y-3 border-t border-line pt-4 first:border-0 first:pt-0">
+              <input type="hidden" name="slug" value={a.slug} />
+              <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
+                <Field label="Nome" htmlFor={`ad-name-${a.slug}`}>
+                  <SmallInput id={`ad-name-${a.slug}`} name="name" defaultValue={a.name} maxLength={80} required />
+                </Field>
+                <Field label="Preço (R$)" htmlFor={`ad-price-${a.slug}`}>
+                  <SmallInput id={`ad-price-${a.slug}`} name="price" inputMode="decimal" defaultValue={centsToInput(a.priceCents)} required />
+                </Field>
+                <Field label="Tempo adicional (min)" htmlFor={`ad-duration-${a.slug}`}>
+                  <SmallInput id={`ad-duration-${a.slug}`} name="durationMinutes" type="number" min={1} max={600} defaultValue={a.durationMinutes} required />
+                </Field>
+              </div>
+              <Field label="Descrição" htmlFor={`ad-desc-${a.slug}`}>
+                <SmallInput id={`ad-desc-${a.slug}`} name="description" defaultValue={a.description} maxLength={240} />
+              </Field>
+              <fieldset className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                <legend className="mb-1 text-sm font-medium">Disponível para</legend>
+                {CATEGORY_ORDER.map((c) => (
+                  <label key={c} className="flex items-center gap-2">
+                    <input type="checkbox" name="categories" value={c} defaultChecked={a.categories.includes(c)} className="size-5" />
+                    {CATEGORY_LABEL[c]}
+                  </label>
+                ))}
+              </fieldset>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="active" defaultChecked={a.active} className="size-5" /> Ativo no site e no agendamento
+              </label>
+              <Button type="submit">Salvar adicional</Button>
             </form>
           ))}
         </div>

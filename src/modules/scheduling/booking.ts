@@ -5,6 +5,7 @@ import type { Database } from "@/db/client";
 import { appointmentHistory, appointments, customers, servicePrices, services } from "@/db/schema";
 import { normalizePhone, normalizePlate } from "@/lib/phone";
 import { localDateOf } from "@/lib/time";
+import { addonsDuration, addonsTotal, loadAddons, resolveAddons } from "./addons";
 import { getAvailableSlots } from "./availability";
 import { loadSettings } from "./settings";
 import { canTransition, type AppointmentStatus } from "./state-machine";
@@ -36,6 +37,8 @@ export const bookingInputSchema = z.object({
   vehicleModel: z.string().trim().min(2, "Informe o modelo do veículo.").max(80),
   plate: z.string().trim().max(10).optional(),
   notes: z.string().trim().max(500).optional(),
+  /** Slugs dos adicionais escolhidos; nome e preço são resolvidos no servidor. */
+  addons: z.array(z.string().max(40)).max(10).optional(),
 });
 export type BookingInput = z.input<typeof bookingInputSchema>;
 
@@ -108,7 +111,10 @@ export async function createAppointment(
     : [];
   if (!svc || !price) return fail("SERVICO_INDISPONIVEL", "Este serviço não está disponível para o veículo escolhido.");
 
-  const duration = price.durationMinutesOverride ?? svc.durationMinutes;
+  const chosen = resolveAddons(await loadAddons(db), input.category, input.addons ?? []);
+  if (!chosen.ok) return fail("SERVICO_INDISPONIVEL", chosen.message);
+
+  const duration = (price.durationMinutesOverride ?? svc.durationMinutes) + addonsDuration(chosen.value);
   const slots = await getAvailableSlots(db, { date: localDateOf(input.startsAt), durationMinutes: duration, now });
   const slot = slots.find((s) => s.startsAt.getTime() === input.startsAt.getTime());
   if (!slot) return fail("HORARIO_INDISPONIVEL", "Este horário não está mais disponível. Escolha outro.");
@@ -131,7 +137,8 @@ export async function createAppointment(
               vehiclePlate: plate,
               startsAt: slot.startsAt,
               endsAt: slot.endsAt,
-              priceCents: effectivePrice(price, now),
+              priceCents: effectivePrice(price, now) + addonsTotal(chosen.value),
+              addons: chosen.value,
               notes: input.notes || null,
             })
             .returning();
@@ -262,10 +269,11 @@ export async function rescheduleByCustomer(
     .limit(1);
   const duration = price?.durationMinutesOverride ?? svc?.durationMinutes;
   if (!duration) return fail("SERVICO_INDISPONIVEL", "Serviço indisponível.");
+  const addonSnapshots = appt.addons.map((a) => ({ ...a, durationMinutes: a.durationMinutes ?? 10 }));
 
   const slots = await getAvailableSlots(db, {
     date: localDateOf(newStartsAt),
-    durationMinutes: duration,
+    durationMinutes: duration + addonsDuration(addonSnapshots),
     now,
     excludeAppointmentId: appt.id,
   });
@@ -295,6 +303,7 @@ export async function rescheduleByCustomer(
             startsAt: slot.startsAt,
             endsAt: slot.endsAt,
             priceCents: appt.priceCents, // preço contratado é preservado
+            addons: addonSnapshots,
             status: appt.status,
             notes: appt.notes,
             rescheduledFromId: appt.id,

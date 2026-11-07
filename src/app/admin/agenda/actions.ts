@@ -54,6 +54,7 @@ export async function createCounterBookingAction(_prev: CounterBookingState, fd:
       vehicleModel: get("vehicleModel") ?? "",
       plate: get("plate"),
       notes: get("notes"),
+      addons: fd.getAll("addons").filter((v): v is string => typeof v === "string" && v !== ""),
     },
     { actorUserId: user.id },
   );
